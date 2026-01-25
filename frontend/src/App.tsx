@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import './App.css'
+
 interface Choreography {
   id: string;
   title: string;
@@ -6,7 +8,6 @@ interface Choreography {
   duration: number;
   dancers: number;
 }
-import './App.css'
 
 function App() {
   const [tasks, setTasks] = useState<Choreography[]>([]);
@@ -25,7 +26,7 @@ function App() {
         {tasks.length === 0 ? (
           <p>No tasks found</p>
         ) : (
-          tasks.map((t) => (
+          tasks.map((t: Choreography) => (
             <div key={t.id}>
               <h3>{t.title}</h3>
               <p>{t.description}</p>
