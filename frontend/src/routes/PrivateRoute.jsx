@@ -1,8 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { useAuth } from '../providers'
 
 const PrivateRoute = () => {
-    // TODO: Replace with actual auth logic (e.g., from AuthContext or localStorage)
-    const isAuthenticated = localStorage.getItem('token')
+    const { isAuthenticated, loading } = useAuth()
+
+    // Show loading while checking auth status
+    if (loading) {
+        return <div>Loading...</div>
+    }
 
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />
 }

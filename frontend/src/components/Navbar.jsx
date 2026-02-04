@@ -1,18 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../providers'
 import './Navbar.css'
 
 const Navbar = () => {
     const navigate = useNavigate()
-    // TODO: Replace with actual auth context
-    const isAuthenticated = localStorage.getItem('token')
-    // TODO: Replace with actual user data from auth context
-    const user = isAuthenticated ? {
-        name: 'User',
-        avatar: null // Will be user's profile image URL
-    } : null
+    const { user, isAuthenticated, logout } = useAuth()
 
-    const handleLogout = () => {
-        localStorage.removeItem('token')
+    const handleLogout = async () => {
+        await logout()
         navigate('/login')
     }
 
@@ -38,17 +33,17 @@ const Navbar = () => {
                             <button
                                 className="avatar-button"
                                 onClick={() => navigate('/dashboard')}
-                                title={user?.name}
+                                title={user?.fullName}
                             >
                                 {user?.avatar ? (
                                     <img
                                         src={user.avatar}
-                                        alt={user.name}
+                                        alt={user.fullName}
                                         className="user-avatar"
                                     />
                                 ) : (
                                     <div className="avatar-placeholder">
-                                        {user?.name?.charAt(0).toUpperCase() || 'U'}
+                                        {user?.fullName?.charAt(0).toUpperCase() || 'U'}
                                     </div>
                                 )}
                             </button>

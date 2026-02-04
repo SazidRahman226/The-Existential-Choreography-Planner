@@ -1,8 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom'
+import { useAuth } from '../providers'
 
 const PublicRoute = () => {
-    // TODO: Replace with actual auth logic (e.g., from AuthContext or localStorage)
-    const isAuthenticated = localStorage.getItem('token')
+    const { isAuthenticated, loading } = useAuth()
+
+    // Show loading while checking auth status
+    if (loading) {
+        return <div>Loading...</div>
+    }
 
     // If authenticated, redirect to dashboard (prevents accessing login when already logged in)
     return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />
