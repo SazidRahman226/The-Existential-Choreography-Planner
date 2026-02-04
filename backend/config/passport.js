@@ -42,9 +42,18 @@ passport.use(new LocalStrategy(
     }
 ));
 
+// Custom cookie extractor
+const cookieExtractor = (req) => {
+    let token = null;
+    if (req && req.cookies) {
+        token = req.cookies['accessToken'];
+    }
+    return token;
+};
+
 // JWT Strategy - for authenticating protected routes
 const jwtOptions = {
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    jwtFromRequest: cookieExtractor,
     secretOrKey: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
 };
 

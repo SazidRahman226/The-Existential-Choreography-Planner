@@ -9,66 +9,61 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
-    // Initialize auth state from localStorage on mount
-    useEffect(() => {
-        const initAuth = async () => {
-            const storedUser = localStorage.getItem('user')
-            const accessToken = localStorage.getItem('accessToken')
-
-            if (storedUser && accessToken) {
-                setUser(JSON.parse(storedUser))
-                // Optionally verify token by fetching profile
-                try {
-                    const response = await fetch(`${API_URL}/profile`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`
-                        }
-                    })
-                    if (response.ok) {
-                        const data = await response.json()
-                        setUser(data.user)
-                        localStorage.setItem('user', JSON.stringify(data.user))
-                    } else {
-                        // Token expired, try refresh
-                        await refreshAccessToken()
-                    }
-                } catch (err) {
-                    console.error('Auth init error:', err)
-                }
-            }
-            setLoading(false)
-        }
-        initAuth()
-    }, [])
-
-    // Refresh access token
-    const refreshAccessToken = async () => {
-        const refreshToken = localStorage.getItem('refreshToken')
-        if (!refreshToken) {
-            logout()
-            return null
-        }
-
+    // Check if user is authenticated (using cookies)
+    const checkAuth = async () => {
         try {
-            const response = await fetch(`${API_URL}/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken })
+            // Try to fetch profile
+            const response = await fetch(`${API_URL}/profile`, {
+                credentials: 'include'
             })
 
             if (response.ok) {
                 const data = await response.json()
-                localStorage.setItem('accessToken', data.accessToken)
-                localStorage.setItem('refreshToken', data.refreshToken)
-                return data.accessToken
+                setUser(data.user)
             } else {
-                logout()
-                return null
+                // If profile fetch fails (e.g. 401), try to refresh token
+                await refreshAccessToken()
             }
         } catch (err) {
+            console.error('Auth check error:', err)
+            // Even on error, we stop loading
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        checkAuth()
+    }, [])
+
+    // Refresh access token (using httpOnly cookie)
+    const refreshAccessToken = async () => {
+        try {
+            const response = await fetch(`${API_URL}/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            })
+
+            if (response.ok) {
+                // Token refreshed, now fetch profile
+                const profileResponse = await fetch(`${API_URL}/profile`, {
+                    credentials: 'include'
+                })
+                if (profileResponse.ok) {
+                    const data = await profileResponse.json()
+                    setUser(data.user)
+                    return true
+                }
+            }
+
+            // If refresh fails or profile fetch fails after refresh
+            setUser(null)
+            return false
+        } catch (err) {
             console.error('Token refresh error:', err)
-            logout()
-            return null
+            setUser(null)
+            return false
         }
     }
 
@@ -79,7 +74,8 @@ export const AuthProvider = ({ children }) => {
             const response = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fullName, username, email, password })
+                body: JSON.stringify({ fullName, username, email, password }),
+                credentials: 'include'
             })
 
             const data = await response.json()
@@ -88,12 +84,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error(data.message || 'Registration failed')
             }
 
-            // Save tokens and user
-            localStorage.setItem('accessToken', data.accessToken)
-            localStorage.setItem('refreshToken', data.refreshToken)
-            localStorage.setItem('user', JSON.stringify(data.user))
             setUser(data.user)
-
             return { success: true, user: data.user }
         } catch (err) {
             setError(err.message)
@@ -108,7 +99,8 @@ export const AuthProvider = ({ children }) => {
             const response = await fetch(`${API_URL}/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
+                body: JSON.stringify({ email, password }),
+                credentials: 'include'
             })
 
             const data = await response.json()
@@ -117,12 +109,7 @@ export const AuthProvider = ({ children }) => {
                 throw new Error(data.message || 'Login failed')
             }
 
-            // Save tokens and user
-            localStorage.setItem('accessToken', data.accessToken)
-            localStorage.setItem('refreshToken', data.refreshToken)
-            localStorage.setItem('user', JSON.stringify(data.user))
             setUser(data.user)
-
             return { success: true, user: data.user }
         } catch (err) {
             setError(err.message)
@@ -132,39 +119,19 @@ export const AuthProvider = ({ children }) => {
 
     // Logout user
     const logout = async () => {
-        const accessToken = localStorage.getItem('accessToken')
-
-        // Call logout endpoint to invalidate refresh token
-        if (accessToken) {
-            try {
-                await fetch(`${API_URL}/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                })
-            } catch (err) {
-                console.error('Logout error:', err)
-            }
+        try {
+            await fetch(`${API_URL}/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            })
+        } catch (err) {
+            console.error('Logout error:', err)
         }
-
-        // Clear local storage and state
-        localStorage.removeItem('accessToken')
-        localStorage.removeItem('refreshToken')
-        localStorage.removeItem('user')
         setUser(null)
         setError(null)
     }
 
-    // Get access token (with auto-refresh if needed)
-    const getAccessToken = async () => {
-        const accessToken = localStorage.getItem('accessToken')
-        if (!accessToken) return null
-
-        // Simple check - you could add JWT decode to check expiry
-        return accessToken
-    }
-
+    // Expose value
     const value = {
         user,
         loading,
@@ -173,8 +140,7 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         logout,
-        getAccessToken,
-        refreshAccessToken
+        checkAuth // Expose incase manual re-check needed
     }
 
     return (

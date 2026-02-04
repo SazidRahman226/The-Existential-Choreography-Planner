@@ -21,6 +21,13 @@ const UserSchema = new mongoose.Schema({
         lowercase: true,
         trim: true
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user'
+    },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
 
     // Passport.js / Authentication fields
     password: {
