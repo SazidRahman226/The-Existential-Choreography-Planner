@@ -126,12 +126,8 @@ const Dashboard = () => {
                         <div className="avatar-circle">{user?.fullName?.charAt(0)}</div>
                         <div className="user-info">
                             <span className="name">{user?.fullName}</span>
-                            <span className="role">{user?.role}</span>
                         </div>
                     </div>
-                    <button onClick={handleLogout} className="btn-sidebar-logout" title="Logout">
-                        <span>🚪</span>
-                    </button>
                 </div>
             </aside>
 

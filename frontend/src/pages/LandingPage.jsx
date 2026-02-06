@@ -17,12 +17,11 @@ function LandingPage() {
                         Choreography Planner
                     </h1>
                     <p className="hero-subtitle">
-                        Design, organize, and perfect your dance choreographies with our intuitive
-                        drag-and-drop planner. Collaborate with your team and bring your artistic vision to life.
+                        Design, organize, and perfect your life with our intuitive
+                        drag-and-drop planner.
                     </p>
                     <div className="hero-buttons">
                         <button className="btn-primary">Get Started</button>
-                        <button className="btn-secondary">Learn More</button>
                     </div>
                 </div>
             </section>
@@ -34,7 +33,7 @@ function LandingPage() {
                         <p className="section-label">Features</p>
                         <h2 className="section-title">Everything You Need to <span className="text-gradient">Choreograph</span></h2>
                         <p className="section-description">
-                            Powerful tools designed for dancers, choreographers, and creative teams.
+                            Choreograph your life, one task at a time.
                         </p>
                     </div>
 
@@ -45,15 +44,6 @@ function LandingPage() {
                             <p className="feature-description">
                                 Create stunning flowcharts and sequences with our intuitive drag-and-drop interface.
                                 No technical skills required.
-                            </p>
-                        </div>
-
-                        <div className="feature-card glass">
-                            <div className="feature-icon">👥</div>
-                            <h3 className="feature-title">Team Collaboration</h3>
-                            <p className="feature-description">
-                                Work together with your dance crew in real-time. Share ideas, provide feedback,
-                                and sync your vision.
                             </p>
                         </div>
 
@@ -92,9 +82,9 @@ function LandingPage() {
                     <div className="steps">
                         <div className="step">
                             <div className="step-number">1</div>
-                            <h3 className="step-title">Create Your Project</h3>
+                            <h3 className="step-title">Plan Your Flow</h3>
                             <p className="step-description">
-                                Start a new choreography project and define your goals, music, and team members.
+                                Start a new workflow and define your goals.
                             </p>
                         </div>
 
@@ -102,7 +92,7 @@ function LandingPage() {
                             <div className="step-number">2</div>
                             <h3 className="step-title">Build Your Sequence</h3>
                             <p className="step-description">
-                                Use our visual builder to map out movements, transitions, and formations.
+                                Use our visual builder to map out tasks, subtasks and dependencies.
                             </p>
                         </div>
 
@@ -110,7 +100,7 @@ function LandingPage() {
                             <div className="step-number">3</div>
                             <h3 className="step-title">Perform & Archive</h3>
                             <p className="step-description">
-                                Execute your choreography, then archive it with notes for future inspiration.
+                                Execute your tasks, then archive it with notes for future reference.
                             </p>
                         </div>
                     </div>
@@ -155,11 +145,9 @@ function LandingPage() {
                 <div className="container">
                     <div className="footer-content">
                         <div className="footer-logo">
-                            <span className="text-gradient">Choreography Planner</span>
+                            <span className="text-gradient">Existential Planner</span>
                         </div>
                         <div className="footer-links">
-                            <a href="#features" className="footer-link">Features</a>
-                            <a href="#how-it-works" className="footer-link">How It Works</a>
                             <a href="#team" className="footer-link">Team</a>
                         </div>
                     </div>

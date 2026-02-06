@@ -130,23 +130,21 @@ const Register = () => {
                 )}
                 <form onSubmit={handleRegister}>
                     <div className="form-group">
-                        <label htmlFor="fullName">Full Name</label>
                         <input
                             type="text"
                             id="fullName"
-                            placeholder="Enter your full name"
+                            placeholder="Name"
                             value={formData.fullName}
                             onChange={handleChange}
                             required
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="username">Username</label>
                         <div className="username-wrapper">
                             <input
                                 type="text"
                                 id="username"
-                                placeholder="Choose a username"
+                                placeholder="Username"
                                 value={formData.username}
                                 onChange={handleChange}
                                 className={getInputClassName()}
@@ -168,23 +166,21 @@ const Register = () => {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label htmlFor="email">Email</label>
                         <input
                             type="email"
                             id="email"
-                            placeholder="Enter your email"
+                            placeholder="Email"
                             value={formData.email}
                             onChange={handleChange}
                             required
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="password">Password</label>
                         <div className="password-wrapper">
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 id="password"
-                                placeholder="Create a password"
+                                placeholder="Password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
@@ -210,12 +206,11 @@ const Register = () => {
                         </div>
                     </div>
                     <div className="form-group">
-                        <label htmlFor="confirmPassword">Confirm Password</label>
                         <div className="password-wrapper">
                             <input
                                 type={showConfirmPassword ? 'text' : 'password'}
                                 id="confirmPassword"
-                                placeholder="Confirm your password"
+                                placeholder="Retype Password"
                                 value={formData.confirmPassword}
                                 onChange={handleChange}
                                 required

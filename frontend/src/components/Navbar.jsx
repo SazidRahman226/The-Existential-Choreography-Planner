@@ -16,15 +16,8 @@ const Navbar = () => {
             <div className="navbar-container">
                 {/* Logo / Brand */}
                 <Link to="/" className="navbar-brand">
-                    <span className="text-gradient">Choreography Planner</span>
+                    <span className="text-gradient">Existential Planner</span>
                 </Link>
-
-                {/* Navigation Links */}
-                <div className="navbar-center">
-                    <Link to="/" className="nav-link">Home</Link>
-                    <Link to="#features" className="nav-link">Features</Link>
-                    <Link to="#how-it-works" className="nav-link">How It Works</Link>
-                </div>
 
                 {/* Auth Section */}
                 <div className="navbar-right">
