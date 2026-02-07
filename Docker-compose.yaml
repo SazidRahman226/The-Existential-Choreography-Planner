@@ -12,8 +12,14 @@ services:
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - JWT_EXPIRES_IN=15m
       - JWT_REFRESH_EXPIRES_IN=7d
+      - EMAIL_SERVICE=${EMAIL_SERVICE}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
     depends_on:
       - mongo
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
 
   frontend:
     build: ./frontend
@@ -22,6 +28,9 @@ services:
     container_name: choreography-frontend
     depends_on:
       - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
   mongo:
       image: mongo:latest

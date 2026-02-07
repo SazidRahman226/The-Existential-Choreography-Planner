@@ -22,6 +22,19 @@ const WorkflowSchema = new mongoose.Schema({
     completionBonus: {
         type: Number,
         default: 0
+    },
+    // Visualization Data
+    flowData: {
+        type: Object, // Stores React Flow nodes, edges, viewport
+        default: {}
+    },
+    thumbnail: {
+        type: String, // URL/Path to preview image
+        default: ''
+    },
+    isPublic: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

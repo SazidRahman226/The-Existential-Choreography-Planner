@@ -1,33 +1,42 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { LandingPage, Login, Register, Dashboard } from './pages'
-import { PrivateRoute, PublicRoute } from './routes'
+import LandingPage from './pages/LandingPage'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Dashboard from './pages/Dashboard'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import PrivateRoute from './routes/PrivateRoute'
+import PublicRoute from './routes/PublicRoute'
 import { Navbar } from './components'
-import { AuthProvider } from './providers'
+import { AuthProvider, PopupProvider } from './providers'
 
 function App() {
     return (
         <AuthProvider>
-            <Router>
-                {/* Common Navbar - appears on all pages */}
-                <Navbar />
+            <PopupProvider>
+                <Router>
+                    {/* Common Navbar - appears on all pages */}
+                    <Navbar />
 
-                <Routes>
-                    {/* Public routes - accessible to everyone */}
-                    <Route path="/" element={<LandingPage />} />
+                    <Routes>
+                        {/* Public routes - accessible to everyone */}
+                        <Route path="/" element={<LandingPage />} />
 
-                    {/* Public-only routes - redirects to dashboard if already authenticated */}
-                    <Route element={<PublicRoute />}>
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                    </Route>
+                        {/* Public-only routes - redirects to dashboard if already authenticated */}
+                        <Route element={<PublicRoute />}>
+                            <Route path="/login" element={<Login />} />
+                            <Route path="/register" element={<Register />} />
+                            <Route path="/forgot-password" element={<ForgotPassword />} />
+                            <Route path="/reset-password/:token" element={<ResetPassword />} />
+                        </Route>
 
-                    {/* Private routes - requires authentication */}
-                    <Route element={<PrivateRoute />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        {/* Add more private routes here */}
-                    </Route>
-                </Routes>
-            </Router>
+                        {/* Private routes - requires authentication */}
+                        <Route element={<PrivateRoute />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                        </Route>
+                    </Routes>
+                </Router>
+            </PopupProvider>
         </AuthProvider>
     )
 }

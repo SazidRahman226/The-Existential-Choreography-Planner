@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../providers'
 import './Navbar.css'
@@ -64,3 +65,4 @@ const Navbar = () => {
 }
 
 export default Navbar
+

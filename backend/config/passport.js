@@ -31,6 +31,9 @@ passport.use(new LocalStrategy(
                 return done(null, false, { message: 'Invalid email or password' });
             }
 
+            // Update energy
+            await user.updateEnergy();
+
             // Remove password from user object before returning
             const userObject = user.toObject();
             delete userObject.password;
@@ -68,6 +71,9 @@ passport.use(new JwtStrategy(jwtOptions, async (payload, done) => {
         if (!user.isActive) {
             return done(null, false, { message: 'Account is deactivated' });
         }
+
+        // Update energy
+        await user.updateEnergy();
 
         return done(null, user);
     } catch (error) {

@@ -1,1 +1,4 @@
-export { default as Navbar } from './Navbar.jsx'
+import Navbar from './Navbar.jsx'
+import Popup from './Popup'
+
+export { Navbar, Popup }

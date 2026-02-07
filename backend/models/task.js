@@ -25,6 +25,23 @@ const TaskSchema = new mongoose.Schema({
     }],
     deadline: {
         type: Date
+    },
+    // Game Mechanics & UI
+    energyCost: {
+        type: Number,
+        default: 10
+    },
+    pointsReward: {
+        type: Number,
+        default: 50
+    },
+    description: {
+        type: String,
+        default: ''
+    },
+    nodeId: {
+        type: String, // ID of the visual node in React Flow
+        required: true
     }
 }, {
     timestamps: true
