@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
-    // Basic user info
+    userProfileId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'UserProfile'
+    },
     fullName: {
         type: String,
         required: true,
@@ -26,17 +29,11 @@ const UserSchema = new mongoose.Schema({
         enum: ['user', 'admin'],
         default: 'user'
     },
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
-
-    // Passport.js / Authentication fields
     password: {
         type: String,
         required: true,
-        select: false  // Won't be returned in queries by default
+        select: false
     },
-
-    // Profile info
     avatar: {
         type: String,
         default: null
@@ -45,8 +42,6 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
-
-    // Account status
     isVerified: {
         type: Boolean,
         default: false
@@ -55,8 +50,6 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-
-    // For password reset functionality
     resetPasswordToken: {
         type: String,
         select: false
@@ -65,15 +58,12 @@ const UserSchema = new mongoose.Schema({
         type: Date,
         select: false
     },
-
-    // For refresh token (JWT)
     refreshToken: {
         type: String,
         select: false
     }
-
 }, {
-    timestamps: true  // adds createdAt and updatedAt automatically
+    timestamps: true
 });
 
 export const User = mongoose.model('User', UserSchema);
