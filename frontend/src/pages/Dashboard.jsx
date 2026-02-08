@@ -14,6 +14,7 @@ const Dashboard = () => {
     const [recentFlows, setRecentFlows] = useState([])
     const [recentTasks, setRecentTasks] = useState([])
     const [loading, setLoading] = useState(true)
+    const { checkAuth } = useAuth() // Need this to refresh points/energy
 
     // Modal States
     const [showCreateFlow, setShowCreateFlow] = useState(false)
@@ -55,8 +56,29 @@ const Dashboard = () => {
             const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
             setRecentFlows(flows.slice(0, 5))
             setRecentTasks(tasks.slice(0, 5))
+            // Also refresh user data for updated points/energy
+            await checkAuth()
         } catch (error) {
             console.error("Error refreshing data:", error)
+        }
+    }
+
+    const handleTaskAction = async (taskId, action) => {
+        if (!confirm(`Are you sure you want to ${action} this task?`)) return
+
+        try {
+            if (action === 'delete') {
+                await taskService.delete(taskId)
+            } else {
+                // 'complete' or 'fail'
+                const status = action === 'complete' ? 'completed' : 'failed'
+                await taskService.update(taskId, { status })
+            }
+            // Refresh data to show updates
+            refreshData()
+        } catch (error) {
+            console.error(`Error ${action}ing task:`, error)
+            alert(error.response?.data?.message || `Failed to ${action} task`)
         }
     }
 
@@ -102,8 +124,41 @@ const Dashboard = () => {
                                     <ul className="dashboard-list">
                                         {recentTasks.map(task => (
                                             <li key={task._id} className="list-item">
-                                                <span className="item-title">{task.title || 'Untitled Task'}</span>
-                                                <span className={`status-badge ${task.status || 'pending'}`}>{task.status || 'Pending'}</span>
+                                                <div className="item-info">
+                                                    <span className="item-title">{task.title || 'Untitled Task'}</span>
+                                                    <small className="item-subtitle">
+                                                        {task.workflowId?.title ? `in ${task.workflowId.title}` : 'No Flow'}
+                                                    </small>
+                                                </div>
+                                                <div className="item-actions">
+                                                    <span className={`status-badge ${task.status || 'pending'}`}>{task.status || 'Pending'}</span>
+
+                                                    {task.status !== 'completed' && task.status !== 'failed' && (
+                                                        <>
+                                                            <button
+                                                                className="btn-icon small success"
+                                                                title="Complete (+Points)"
+                                                                onClick={() => handleTaskAction(task._id, 'complete')}
+                                                            >
+                                                                ✅
+                                                            </button>
+                                                            <button
+                                                                className="btn-icon small danger"
+                                                                title="Fail"
+                                                                onClick={() => handleTaskAction(task._id, 'fail')}
+                                                            >
+                                                                ❌
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        className="btn-icon small"
+                                                        title="Delete"
+                                                        onClick={() => handleTaskAction(task._id, 'delete')}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>

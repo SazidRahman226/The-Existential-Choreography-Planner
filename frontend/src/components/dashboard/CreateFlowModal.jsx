@@ -79,6 +79,9 @@ const CreateFlowModal = ({ onClose, onSuccess }) => {
                             />
                             Make Public
                         </label>
+                        <p className="help-text" style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
+                            Public flows can be viewed and cloned by other community members.
+                        </p>
                     </div>
 
                     <div className="modal-actions">

@@ -11,33 +11,73 @@ const CreateTaskModal = ({ onClose, onSuccess }) => {
         description: '',
         workflowId: '',
         pointsReward: 50,
-        energyCost: 10
+        energyCost: 10,
+        prerequisites: [] // Array of task IDs
     })
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
 
+    // Prerequisites logic
+    const [availableTasks, setAvailableTasks] = useState([]) // All tasks
+    const [flowTasks, setFlowTasks] = useState([]) // Tasks in selected flow
+
     useEffect(() => {
-        const fetchFlows = async () => {
+        const fetchFlowsAndTasks = async () => {
             try {
-                const data = await flowService.getAll()
-                const flowList = Array.isArray(data) ? data : (data.data || [])
+                // Fetch Flows
+                const flowsData = await flowService.getAll()
+                const flowList = Array.isArray(flowsData) ? flowsData : (flowsData.data || [])
                 setFlows(flowList)
+
+                // Fetch All Tasks (to filter for prerequisites)
+                // Ideally backend provides endpoint to get tasks by flow, but filtering getAll works for now
+                const tasksData = await taskService.getAll()
+                const taskList = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
+                setAvailableTasks(taskList)
+
                 if (flowList.length > 0) {
                     setFormData(prev => ({ ...prev, workflowId: flowList[0]._id }))
                 }
             } catch (err) {
-                console.error("Failed to load flows", err)
-                setError("Could not load flows. Please create a flow first.")
+                console.error("Failed to load data", err)
+                setError("Could not load initial data.")
             } finally {
                 setLoadingFlows(false)
             }
         }
-        fetchFlows()
+        fetchFlowsAndTasks()
     }, [])
+
+    // Filter tasks when workflowId changes
+    useEffect(() => {
+        if (formData.workflowId && availableTasks.length > 0) {
+            // Filter tasks belonging to this flow (check if populated or direct ID)
+            const filtered = availableTasks.filter(t => {
+                const wId = t.workflowId?._id || t.workflowId // Handle populated or unpopulated
+                return wId === formData.workflowId
+            })
+            setFlowTasks(filtered)
+            // Reset prerequisites if flow changes
+            setFormData(prev => ({ ...prev, prerequisites: [] }))
+        } else {
+            setFlowTasks([])
+        }
+    }, [formData.workflowId, availableTasks])
 
     const handleChange = (e) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
+    }
+
+    const handlePrereqChange = (e) => {
+        const options = e.target.options
+        const selectedValues = []
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].selected) {
+                selectedValues.push(options[i].value)
+            }
+        }
+        setFormData(prev => ({ ...prev, prerequisites: selectedValues }))
     }
 
     const handleSubmit = async (e) => {
@@ -137,6 +177,31 @@ const CreateTaskModal = ({ onClose, onSuccess }) => {
                                 onChange={handleChange}
                                 min="0"
                             />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Prerequisites (Hold Ctrl to select multiple)</label>
+                            <select
+                                name="prerequisites"
+                                multiple
+                                value={formData.prerequisites}
+                                onChange={handlePrereqChange}
+                                className="select-input"
+                                style={{ height: '100px' }}
+                            >
+                                {flowTasks.length === 0 ? (
+                                    <option disabled>No other tasks in this flow</option>
+                                ) : (
+                                    flowTasks.map(task => (
+                                        <option key={task._id} value={task._id}>
+                                            {task.title} ({task.status})
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                            <p className="help-text" style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                Tasks that must be completed before this one.
+                            </p>
                         </div>
 
                         <div className="modal-actions">
