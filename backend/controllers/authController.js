@@ -2,6 +2,7 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
+import { Badge } from '../models/badge.js';
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
@@ -123,8 +124,58 @@ export const logoutUser = async (req, res) => {
 };
 
 // Get current user profile
-export const getProfile = (req, res) => {
-    res.json({ user: req.user });
+export const getProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate('badges');
+        res.json({ user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching profile' });
+    }
+};
+
+// Update user profile
+export const updateProfile = async (req, res) => {
+    try {
+        const { fullName, username, bio, avatar } = req.body;
+        const userId = req.user._id;
+
+        // Validation - basic
+        if (!fullName || !username) {
+            return res.status(400).json({ message: 'Full name and username are required' });
+        }
+
+        // Check username uniqueness if changed
+        if (username.toLowerCase() !== req.user.username) {
+            const existingUser = await User.findOne({ username: username.toLowerCase() });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Username is already taken' });
+            }
+        }
+
+        // Update user
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            {
+                fullName,
+                username: username.toLowerCase(),
+                bio: bio || '',
+                // If avatar is provided update it, else keep old? 
+                // Front end should send current avatar if not changed. 
+                // Or we can check if avatar is undefined.
+                ...(avatar !== undefined && { avatar })
+            },
+            { new: true, runValidators: true }
+        ).populate('badges');
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ message: 'Error updating profile' });
+    }
 };
 
 // Check username availability
@@ -234,5 +285,58 @@ export const resetPasswordController = async (req, res) => {
 
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+
+
+// --- Admin Controllers ---
+
+// Get all users
+export const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}).select('-password');
+        res.json({ users });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching users' });
+    }
+};
+
+// Update user role
+export const updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!['user', 'admin'].includes(role)) {
+            return res.status(400).json({ message: 'Invalid role' });
+        }
+
+        const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({ message: 'User role updated', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user role' });
+    }
+};
+
+// Update user status
+export const updateUserStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isActive } = req.body;
+
+        const user = await User.findByIdAndUpdate(id, { isActive }, { new: true }).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({ message: 'User status updated', user });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating user status' });
     }
 };

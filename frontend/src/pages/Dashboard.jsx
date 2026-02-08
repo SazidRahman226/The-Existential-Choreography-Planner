@@ -3,8 +3,11 @@ import { useAuth } from '../providers'
 import { useNavigate } from 'react-router-dom'
 import '../styles/auth.css'
 
+import ProfileTab from '../components/dashboard/ProfileTab'
+import UsersTab from '../components/dashboard/UsersTab'
+
 const Dashboard = () => {
-    const { user, logout } = useAuth()
+    const { user, logout, checkAuth } = useAuth()
     const navigate = useNavigate()
     const [activeTab, setActiveTab] = useState('profile')
 
@@ -18,29 +21,7 @@ const Dashboard = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'profile':
-                return (
-                    <div className="dashboard-card">
-                        <h3>My Profile</h3>
-                        <div className="profile-details">
-                            <div className="profile-group">
-                                <label>Full Name</label>
-                                <p>{user?.fullName}</p>
-                            </div>
-                            <div className="profile-group">
-                                <label>Email</label>
-                                <p>{user?.email}</p>
-                            </div>
-                            <div className="profile-group">
-                                <label>Username</label>
-                                <p>{user?.username}</p>
-                            </div>
-                            <div className="profile-group">
-                                <label>Role</label>
-                                <span className={`role-badge ${user?.role}`}>{user?.role}</span>
-                            </div>
-                        </div>
-                    </div>
-                )
+                return <ProfileTab user={user} refreshUser={checkAuth} />
             case 'tasks':
                 return (
                     <div className="dashboard-card">
@@ -50,22 +31,7 @@ const Dashboard = () => {
                     </div>
                 )
             case 'users':
-                return (
-                    <div className="dashboard-card admin-card">
-                        <h3>User Management</h3>
-                        <p>Admin panel to manage registered users.</p>
-                        <div className="admin-stats">
-                            <div className="stat-box">
-                                <span>Total Users</span>
-                                <strong>12</strong>
-                            </div>
-                            <div className="stat-box">
-                                <span>Active Now</span>
-                                <strong>3</strong>
-                            </div>
-                        </div>
-                    </div>
-                )
+                return <UsersTab />
             case 'settings':
                 return (
                     <div className="dashboard-card admin-card">
