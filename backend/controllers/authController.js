@@ -162,7 +162,9 @@ export const updateProfile = async (req, res) => {
                 // If avatar is provided update it, else keep old? 
                 // Front end should send current avatar if not changed. 
                 // Or we can check if avatar is undefined.
-                ...(avatar !== undefined && { avatar })
+                bio: bio || '',
+                ...(req.file && { avatar: req.file.path }),
+                ...(avatar !== undefined && !req.file && { avatar }) // Fallback if avatar is sent as string (e.g. clear)
             },
             { new: true, runValidators: true }
         ).populate('badges');
@@ -312,7 +314,7 @@ export const updateUserRole = async (req, res) => {
         }
 
         const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password');
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

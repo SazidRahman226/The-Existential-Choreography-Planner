@@ -1,115 +1,188 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../providers'
 import { useNavigate } from 'react-router-dom'
+import Sidebar from '../components/dashboard/Sidebar'
+import CreateFlowModal from '../components/dashboard/CreateFlowModal'
+import CreateTaskModal from '../components/dashboard/CreateTaskModal'
+import flowService from '../services/flow.service'
+import taskService from '../services/task.service'
 import '../styles/auth.css'
 
-import ProfileTab from '../components/dashboard/ProfileTab'
-import UsersTab from '../components/dashboard/UsersTab'
-
 const Dashboard = () => {
-    const { user, logout, checkAuth } = useAuth()
+    const { user } = useAuth()
     const navigate = useNavigate()
-    const [activeTab, setActiveTab] = useState('profile')
+    const [recentFlows, setRecentFlows] = useState([])
+    const [recentTasks, setRecentTasks] = useState([])
+    const [loading, setLoading] = useState(true)
+    const { checkAuth } = useAuth() // Need this to refresh points/energy
 
-    const handleLogout = async () => {
-        await logout()
-        navigate('/login')
+    // Modal States
+    const [showCreateFlow, setShowCreateFlow] = useState(false)
+    const [showCreateTask, setShowCreateTask] = useState(false)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Parallel fetch
+                const [flowsData, tasksData] = await Promise.all([
+                    flowService.getAll(),
+                    taskService.getAll()
+                ])
+
+                // Assuming API returns array directly or { data: [] }
+                // Adjust based on actual API response structure if needed
+                const flows = Array.isArray(flowsData) ? flowsData : (flowsData.data || [])
+                const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
+
+                setRecentFlows(flows.slice(0, 5))
+                setRecentTasks(tasks.slice(0, 5))
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    const refreshData = async () => {
+        try {
+            const [flowsData, tasksData] = await Promise.all([
+                flowService.getAll(),
+                taskService.getAll()
+            ])
+            const flows = Array.isArray(flowsData) ? flowsData : (flowsData.data || [])
+            const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
+            setRecentFlows(flows.slice(0, 5))
+            setRecentTasks(tasks.slice(0, 5))
+            // Also refresh user data for updated points/energy
+            await checkAuth()
+        } catch (error) {
+            console.error("Error refreshing data:", error)
+        }
     }
 
-    const isAdmin = user?.role === 'admin'
+    const handleTaskAction = async (taskId, action) => {
+        if (!confirm(`Are you sure you want to ${action} this task?`)) return
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'profile':
-                return <ProfileTab user={user} refreshUser={checkAuth} />
-            case 'tasks':
-                return (
-                    <div className="dashboard-card">
-                        <h3>My Tasks</h3>
-                        <p>No tasks assigned yet.</p>
-                        <button className="btn-card">Create New Task</button>
-                    </div>
-                )
-            case 'users':
-                return <UsersTab />
-            case 'settings':
-                return (
-                    <div className="dashboard-card admin-card">
-                        <h3>System Settings</h3>
-                        <p>Configure global application preferences.</p>
-                        <button className="btn-card btn-admin">Edit Configuration</button>
-                    </div>
-                )
-            default:
-                return <div>Select an option</div>
+        try {
+            if (action === 'delete') {
+                await taskService.delete(taskId)
+            } else {
+                // 'complete' or 'fail'
+                const status = action === 'complete' ? 'completed' : 'failed'
+                await taskService.update(taskId, { status })
+            }
+            // Refresh data to show updates
+            refreshData()
+        } catch (error) {
+            console.error(`Error ${action}ing task:`, error)
+            alert(error.response?.data?.message || `Failed to ${action} task`)
         }
     }
 
     return (
         <div className="dashboard-layout">
-            {/* Sidebar */}
-            <aside className="dashboard-sidebar">
-                <div className="sidebar-header">
-                    <h2>Choreography</h2>
-                    <span className="version">v1.0</span>
-                </div>
+            <Sidebar />
 
-                <nav className="sidebar-nav">
-                    <button
-                        className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('profile')}
-                    >
-                        <span>👤</span> Profile
-                    </button>
-                    <button
-                        className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('tasks')}
-                    >
-                        <span>📝</span> Tasks
-                    </button>
-
-                    {isAdmin && (
-                        <>
-                            <div className="nav-divider">Admin</div>
-                            <button
-                                className={`nav-item admin ${activeTab === 'users' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('users')}
-                            >
-                                <span>👥</span> Users
-                            </button>
-                            <button
-                                className={`nav-item admin ${activeTab === 'settings' ? 'active' : ''}`}
-                                onClick={() => setActiveTab('settings')}
-                            >
-                                <span>⚙️</span> Settings
-                            </button>
-                        </>
-                    )}
-                </nav>
-
-                <div className="sidebar-footer">
-                    <div className="user-mini">
-                        <div className="avatar-circle">{user?.fullName?.charAt(0)}</div>
-                        <div className="user-info">
-                            <span className="name">{user?.fullName}</span>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Main Content */}
             <main className="dashboard-main">
                 <header className="content-header">
-                    <h1>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</h1>
+                    <h1>Dashboard</h1>
                     <div className="header-actions">
                         <button className="btn-icon">🔔</button>
                     </div>
                 </header>
 
                 <div className="content-body">
-                    {renderContent()}
+                    <div className="dashboard-actions">
+                        <button className="btn-primary" onClick={() => setShowCreateFlow(true)}>+ Create Flow</button>
+                        <button className="btn-card" onClick={() => setShowCreateTask(true)}>+ Create Task</button>
+                    </div>
+
+                    <div className="dashboard-grid-2">
+                        <div className="dashboard-card">
+                            <h3>Recent Flows</h3>
+                            {loading ? <p>Loading...</p> : (
+                                recentFlows.length > 0 ? (
+                                    <ul className="dashboard-list">
+                                        {recentFlows.map(flow => (
+                                            <li key={flow._id} className="list-item">
+                                                <span className="item-title">{flow.title || 'Untitled Flow'}</span>
+                                                <span className={`status-badge ${flow.status || 'draft'}`}>{flow.status || 'Draft'}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : <p className="empty-text">No flows found. Create one to get started!</p>
+                            )}
+                        </div>
+
+                        <div className="dashboard-card">
+                            <h3>Recent Tasks</h3>
+                            {loading ? <p>Loading...</p> : (
+                                recentTasks.length > 0 ? (
+                                    <ul className="dashboard-list">
+                                        {recentTasks.map(task => (
+                                            <li key={task._id} className="list-item">
+                                                <div className="item-info">
+                                                    <span className="item-title">{task.title || 'Untitled Task'}</span>
+                                                    <small className="item-subtitle">
+                                                        {task.workflowId?.title ? `in ${task.workflowId.title}` : 'No Flow'}
+                                                    </small>
+                                                </div>
+                                                <div className="item-actions">
+                                                    <span className={`status-badge ${task.status || 'pending'}`}>{task.status || 'Pending'}</span>
+
+                                                    {task.status !== 'completed' && task.status !== 'failed' && (
+                                                        <>
+                                                            <button
+                                                                className="btn-icon small success"
+                                                                title="Complete (+Points)"
+                                                                onClick={() => handleTaskAction(task._id, 'complete')}
+                                                            >
+                                                                ✅
+                                                            </button>
+                                                            <button
+                                                                className="btn-icon small danger"
+                                                                title="Fail"
+                                                                onClick={() => handleTaskAction(task._id, 'fail')}
+                                                            >
+                                                                ❌
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        className="btn-icon small"
+                                                        title="Delete"
+                                                        onClick={() => handleTaskAction(task._id, 'delete')}
+                                                    >
+                                                        🗑️
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : <p className="empty-text">No tasks found. Keep it up!</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </main>
+
+            {/* Modals */}
+            {showCreateFlow && (
+                <CreateFlowModal
+                    onClose={() => setShowCreateFlow(false)}
+                    onSuccess={refreshData}
+                />
+            )}
+
+            {showCreateTask && (
+                <CreateTaskModal
+                    onClose={() => setShowCreateTask(false)}
+                    onSuccess={refreshData}
+                />
+            )}
         </div>
     )
 }

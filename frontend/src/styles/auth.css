@@ -545,6 +545,7 @@
     border: 2px solid var(--border-color);
     box-shadow: 0 4px 0 var(--border-color);
 }
+
 /* Profile Tab Styles */
 .profile-container {
     display: flex;
@@ -554,8 +555,15 @@
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .profile-header-card {
@@ -571,6 +579,8 @@
 .profile-avatar-large {
     width: 100px;
     height: 100px;
+    min-width: 100px;
+    flex-shrink: 0;
     background: var(--primary-color);
     border-radius: 50%;
     display: flex;
@@ -580,7 +590,7 @@
     color: white;
     font-weight: 800;
     border: 4px solid #ffffff;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
 
@@ -735,7 +745,7 @@
     background: #bae6fd;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .energy-bar-fill {
@@ -854,7 +864,7 @@
         text-align: center;
         gap: 1rem;
     }
-    
+
     .profile-name-row {
         justify-content: center;
     }
@@ -862,7 +872,7 @@
     .profile-meta {
         justify-content: center;
     }
-    
+
     .profile-grid {
         grid-template-columns: 1fr;
     }
@@ -889,7 +899,7 @@
     border: 2px solid var(--border-color);
     padding: 2rem;
     border-radius: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     max-width: 400px;
     width: 90%;
     text-align: center;
@@ -897,8 +907,15 @@
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px) scale(0.95); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .modal-content h3 {
@@ -1059,3 +1076,249 @@
     color: #ef4444;
 }
 
+
+/* Dashboard specific styles */
+.dashboard-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-actions button {
+    width: auto;
+    padding: 0.75rem 2rem;
+}
+
+.dashboard-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 900px) {
+    .dashboard-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dashboard-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.list-item:hover {
+    border-color: var(--border-color);
+    background: #ffffff;
+    transform: translateX(4px);
+}
+
+.item-title {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.status-badge.draft {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.status-badge.published {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.pending {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.status-badge.completed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.empty-text {
+    font-style: italic;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem 0;
+}
+
+/* Modal Styles */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--primary-color);
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.select-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    width: auto;
+    margin: 0;
+
+}
+
+/* Profile Edit Form */
+.profile-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    animation: fadeIn 0.3s ease-out;
+    width: 100%;
+}
+
+.username-input-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+.status-text.success {
+    color: var(--primary-color);
+}
+
+.status-text.error {
+    color: var(--error-color);
+}
+
+.edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.edit-actions button {
+    flex: 1;
+    justify-content: center;
+}
+
+.edit-actions .btn-card {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.edit-actions .btn-card:hover {
+    background: var(--bg-secondary);
+    border-color: var(--text-secondary);
+}
+
+/* Avatar Upload Styles */
+.avatar-upload-group {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.avatar-upload-container {
+    cursor: pointer;
+    position: relative;
+    margin: 0 auto;
+    transition: transform 0.2s ease;
+}
+
+.avatar-upload-container:hover {
+    transform: scale(1.05);
+    border-color: var(--secondary-color);
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 50%;
+}
+
+.avatar-upload-container:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-overlay span {
+    font-size: 1.5rem;
+}
+
+.avatar-help-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}

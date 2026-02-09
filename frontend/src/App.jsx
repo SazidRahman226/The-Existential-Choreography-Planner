@@ -3,6 +3,7 @@ import LandingPage from './pages/LandingPage'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Account from './pages/Account'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import PrivateRoute from './routes/PrivateRoute'
@@ -33,6 +34,7 @@ function App() {
                         {/* Private routes - requires authentication */}
                         <Route element={<PrivateRoute />}>
                             <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/account" element={<Account />} />
                         </Route>
                     </Routes>
                 </Router>

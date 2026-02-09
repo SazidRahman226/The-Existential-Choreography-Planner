@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const TaskSchema = new mongoose.Schema({
     workflowId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Workflow',
+        ref: 'Flow',
         required: true
     },
     title: {
