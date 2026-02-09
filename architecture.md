@@ -88,12 +88,31 @@ sequenceDiagram
     - **Services**: Business logic (`services/`)
     - **Repositories**: Database access (`repositories/`)
 
-## Key Directories
+## Folder Structure
 
-| Directory | Purpose |
-| to | to |
-| `frontend/src/pages` | React components for each route (Login, Dashboard, etc.) |
-| `frontend/src/services` | API handling files (auth, flows, tasks) |
-| `backend/routes` | API route definitions |
-| `backend/controllers` | Request handling logic |
-| `backend/models` | Mongoose schemas (User, Flow, Task) |
+```text
+├── backend/
+│   ├── config/             # Database & Passport config
+│   ├── controllers/        # Request handlers
+│   ├── middleware/         # Auth & Error middlewares
+│   ├── models/             # Mongoose schemas
+│   ├── repositories/       # DAL (Data Access Layer)
+│   ├── routes/             # API Endpoints
+│   ├── services/           # Business Logic
+│   ├── utils/              # Utility functions
+│   └── index.js            # Entry point
+├── frontend/
+│   ├── public/             # Static assets
+│   ├── src/
+│   │   ├── components/     # Reusable UI components
+│   │   ├── pages/          # Route components
+│   │   ├── providers/      # Context providers (Auth, Popup)
+│   │   ├── routes/         # Route definitions (Public/Private)
+│   │   ├── services/       # API integration
+│   │   ├── styles/         # Global styles
+│   │   ├── App.jsx         # Main App component
+│   │   └── main.jsx        # Entry point
+│   └── vite.config.ts      # Vite configuration
+├── Docker-compose.yaml     # Container orchestration
+└── specSheet.md            # Project Specification
+```
