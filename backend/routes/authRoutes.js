@@ -13,10 +13,14 @@ router.get('/check-username/:username', checkUsername);
 router.post('/forgot-password', forgotPasswordController);
 router.post('/reset-password/:token', resetPasswordController);
 
+import upload from '../middleware/upload.js';
+
+// ... (existing imports)
+
 // Protected routes
 router.post('/logout', authenticateJWT, logoutUser);
 router.get('/profile', authenticateJWT, getProfile);
-router.put('/profile', authenticateJWT, updateProfile);
+router.put('/profile', authenticateJWT, upload.single('avatar'), updateProfile);
 
 // Admin Routes
 router.get('/users', authenticateJWT, isAdmin, getAllUsers);

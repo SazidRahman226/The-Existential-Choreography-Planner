@@ -13,6 +13,8 @@ const Account = () => {
     })
     const [loading, setLoading] = useState(false)
     const [usernameStatus, setUsernameStatus] = useState(null) // null, 'checking', 'available', 'unavailable'
+    const [avatarFile, setAvatarFile] = useState(null)
+    const [avatarPreview, setAvatarPreview] = useState(null)
 
     // Modal States
     const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -59,6 +61,14 @@ const Account = () => {
         }
     }
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0]
+        if (file) {
+            setAvatarFile(file)
+            setAvatarPreview(URL.createObjectURL(file))
+        }
+    }
+
     const checkUsernameAvailability = async (username) => {
         setUsernameStatus('checking')
         try {
@@ -85,12 +95,17 @@ const Account = () => {
         setLoading(true)
 
         try {
+            const formDataToSend = new FormData()
+            formDataToSend.append('fullName', formData.fullName)
+            formDataToSend.append('username', formData.username)
+            formDataToSend.append('bio', formData.bio)
+            if (avatarFile) {
+                formDataToSend.append('avatar', avatarFile)
+            }
+
             const res = await fetch('http://localhost:3000/api/auth/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData),
+                body: formDataToSend,
                 credentials: 'include'
             })
 
@@ -100,6 +115,8 @@ const Account = () => {
 
             setStatusModal({ show: true, type: 'success', message: 'Profile updated successfully!' })
             setIsEditing(false)
+            setAvatarFile(null)
+            setAvatarPreview(null)
 
             if (checkAuth) checkAuth()
 
@@ -155,16 +172,43 @@ const Account = () => {
                         {/* Main Identity Card */}
                         <div className="dashboard-card profile-header-card">
                             <div className="profile-header-content">
-                                <div className="profile-avatar-large">
-                                    {user.avatar ? (
-                                        <img src={user.avatar} alt={user.fullName} />
-                                    ) : (
-                                        <span>{user.fullName?.charAt(0)}</span>
-                                    )}
-                                </div>
+                                {!isEditing && (
+                                    <div className="profile-avatar-large">
+                                        {user.avatar ? (
+                                            <img src={user.avatar} alt={user.fullName} />
+                                        ) : (
+                                            <span>{user.fullName?.charAt(0)}</span>
+                                        )}
+                                    </div>
+                                )}
 
                                 {isEditing ? (
                                     <form onSubmit={handleInitialSubmit} className="profile-edit-form">
+                                        <div className="form-group avatar-upload-group">
+                                            <div
+                                                className="profile-avatar-large avatar-upload-container"
+                                                onClick={() => document.getElementById('avatar-input').click()}
+                                            >
+                                                {avatarPreview ? (
+                                                    <img src={avatarPreview} alt="Preview" />
+                                                ) : user.avatar ? (
+                                                    <img src={user.avatar} alt={user.fullName} />
+                                                ) : (
+                                                    <span>{user.fullName?.charAt(0)}</span>
+                                                )}
+                                                <div className="avatar-overlay">
+                                                    <span>📷</span>
+                                                </div>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                id="avatar-input"
+                                                accept="image/*"
+                                                onChange={handleFileChange}
+                                                style={{ display: 'none' }}
+                                            />
+                                            <p className="avatar-help-text">Click avatar to change</p>
+                                        </div>
                                         <div className="form-group">
                                             <label>Full Name</label>
                                             <input
