@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const TaskSchema = new mongoose.Schema({
     workflowId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Flow',
+        ref: 'Workflow',
         required: true
     },
     title: {
@@ -12,7 +12,7 @@ const TaskSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'in-progress', 'completed', 'failed'], // Added likely enums
+        enum: ['pending', 'in-progress', 'completed', 'failed'],
         default: 'pending'
     },
     points: {
@@ -25,23 +25,6 @@ const TaskSchema = new mongoose.Schema({
     }],
     deadline: {
         type: Date
-    },
-    // Game Mechanics & UI
-    energyCost: {
-        type: Number,
-        default: 10
-    },
-    pointsReward: {
-        type: Number,
-        default: 50
-    },
-    description: {
-        type: String,
-        default: ''
-    },
-    nodeId: {
-        type: String, // ID of the visual node in React Flow
-        required: true
     }
 }, {
     timestamps: true

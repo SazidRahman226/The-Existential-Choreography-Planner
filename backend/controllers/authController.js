@@ -2,7 +2,6 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
-import { Badge } from '../models/badge.js';
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
