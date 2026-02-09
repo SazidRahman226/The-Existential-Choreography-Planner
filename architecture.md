@@ -10,8 +10,8 @@ The project follows a standard MERN (MongoDB, Express.js, React, Node.js) stack 
 graph TD
     User[User]
     
-    subgraph Frontend [Frontend (React + Vite)]
-        UI[User Interface / Pages]
+    subgraph Frontend ["Frontend (React + Vite)"]
+        UI["User Interface / Pages"]
         AuthContext[Auth Provider]
         APIServices[API Services]
         
@@ -19,18 +19,18 @@ graph TD
         UI --> APIServices
     end
     
-    subgraph Backend [Backend (Node.js + Express)]
-        APIGateway[API Routes / Middleware]
+    subgraph Backend ["Backend (Node.js + Express)"]
+        APIGateway["API Routes / Middleware"]
         Controllers[Controllers]
-        Services[Business Logic / Services]
-        Repo[Repositories / DAL]
+        Services["Business Logic / Services"]
+        Repo["Repositories / DAL"]
         
         APIGateway --> Controllers
         Controllers --> Services
         Services --> Repo
     end
     
-    subgraph Database [Data Storage]
+    subgraph Database ["Data Storage"]
         MongoDB[(MongoDB)]
     end
     
