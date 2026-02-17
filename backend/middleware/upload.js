@@ -6,7 +6,7 @@ const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'existential-choreography',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
+        allowedFormats: ['jpg', 'png', 'jpeg'],
         transformation: [{ width: 500, height: 500, crop: 'limit' }]
     }
 });

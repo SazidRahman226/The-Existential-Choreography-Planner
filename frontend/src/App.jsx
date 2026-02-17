@@ -11,6 +11,8 @@ import PublicRoute from './routes/PublicRoute'
 import { Navbar } from './components'
 import { AuthProvider, PopupProvider } from './providers'
 
+import Users from './pages/Users'
+
 function App() {
     return (
         <AuthProvider>
@@ -35,6 +37,7 @@ function App() {
                         <Route element={<PrivateRoute />}>
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/account" element={<Account />} />
+                            <Route path="/users" element={<Users />} />
                         </Route>
                     </Routes>
                 </Router>

@@ -317,10 +317,7 @@ const Account = () => {
                                             <span className="detail-label">Email</span>
                                             <span className="detail-value">{user.email}</span>
                                         </div>
-                                        <div className="detail-row">
-                                            <span className="detail-label">User ID</span>
-                                            <span className="detail-value mono">{user._id}</span>
-                                        </div>
+
                                         <div className="detail-row">
                                             <span className="detail-label">Last Updated</span>
                                             <span className="detail-value">{formatDate(user.updatedAt)}</span>

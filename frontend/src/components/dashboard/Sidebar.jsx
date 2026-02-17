@@ -3,7 +3,7 @@ import { useAuth } from '../../providers'
 import '../../styles/auth.css'
 
 const Sidebar = () => {
-    const { user, logout } = useAuth()
+    const { user } = useAuth()
     const location = useLocation()
     const currentPath = location.pathname
 
@@ -30,6 +30,15 @@ const Sidebar = () => {
                     <span>👤</span> Account
                 </Link>
 
+                {isAdmin && (
+                    <Link
+                        to="/users"
+                        className={`nav-item ${currentPath === '/users' ? 'active' : ''}`}
+                    >
+                        <span>👥</span> Users
+                    </Link>
+                )}
+
                 {/* Placeholder links for Flows and Tasks if they become separate pages later */}
                 {/* 
                 <Link
@@ -46,23 +55,10 @@ const Sidebar = () => {
                 </Link> 
                 */}
 
-                {isAdmin && (
-                    <>
-                        <div className="nav-divider">Admin</div>
-                        {/* Example admin links if needed */}
-                    </>
-                )}
+
             </nav>
 
-            <div className="sidebar-footer">
-                <div className="user-mini">
-                    <div className="avatar-circle">{user?.fullName?.charAt(0)}</div>
-                    <div className="user-info">
-                        <span className="name">{user?.fullName}</span>
-                        <button className="btn-text-small" onClick={logout}>Logout</button>
-                    </div>
-                </div>
-            </div>
+
         </aside>
     )
 }
