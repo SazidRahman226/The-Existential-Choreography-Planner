@@ -2,6 +2,7 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
+import { Badge } from '../models/badge.js'; // Import to ensure schema registration
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
@@ -10,14 +11,14 @@ const setTokenCookies = (res, accessToken, refreshToken) => {
     res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: isProduction, // HTTPS only in production
-        sameSite: 'strict',   // CSRF protection
+        sameSite: 'Lax',   // Lax for better local dev compatibility, Strict is ideal but can cause issues with redirects/ports
         maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'strict',
+        sameSite: 'Lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 };
@@ -57,39 +58,56 @@ export const register = async (req, res) => {
 
 // Login with email and password
 export const login = (req, res, next) => {
-    passport.authenticate('local', { session: false }, (err, user, info) => {
+    passport.authenticate('local', { session: false }, async (err, user, info) => {
         if (err) {
+            console.error('Login Error (Passport):', err);
             return res.status(500).json({ message: 'Internal server error' });
         }
 
         if (!user) {
+            console.warn('Login Failed (Invalid Credentials):', info?.message);
             return res.status(401).json({ message: info?.message || 'Invalid credentials' });
         }
 
-        // Generate tokens
-        const tokens = generateTokens(user);
+        try {
+            // Generate tokens
+            const tokens = generateTokens(user);
+            console.log(`[LOGIN] Generating tokens for user ${user._id}`);
 
-        // Set cookies
-        setTokenCookies(res, tokens.accessToken, tokens.refreshToken);
+            // Save refresh token to database
+            console.log(`[LOGIN] Saving refresh token to DB: ${tokens.refreshToken.substring(0, 10)}...`);
+            await User.findByIdAndUpdate(user._id, { refreshToken: tokens.refreshToken });
 
-        res.json({
-            message: 'Login successful',
-            user
-        });
+            // Set cookies
+            console.log(`[LOGIN] Setting cookies. NODE_ENV=${process.env.NODE_ENV}`);
+            setTokenCookies(res, tokens.accessToken, tokens.refreshToken);
+
+            res.json({
+                message: 'Login successful',
+                user
+            });
+        } catch (error) {
+            console.error('Login error:', error);
+            res.status(500).json({ message: 'Error during login' });
+        }
     })(req, res, next);
 };
 
 // Refresh access token
 export const refresh = async (req, res) => {
+    console.log('[REFRESH] Refresh request received');
     try {
         // Get refresh token from cookie
         const refreshToken = req.cookies.refreshToken;
+        console.log(`[REFRESH] Cookie token: ${refreshToken ? refreshToken.substring(0, 10) + '...' : 'NONE'}`);
 
         if (!refreshToken) {
+            console.warn('[REFRESH] No refresh token provided');
             return res.status(401).json({ message: 'Refresh token is required' });
         }
 
         const tokens = await refreshTokens(refreshToken);
+        console.log('[REFRESH] Tokens refreshed successfully');
 
         // Set new cookies
         setTokenCookies(res, tokens.accessToken, tokens.refreshToken);
@@ -98,6 +116,7 @@ export const refresh = async (req, res) => {
             message: 'Tokens refreshed successfully'
         });
     } catch (error) {
+        console.error('[REFRESH] Error:', error.message);
         // Clear invalid cookies
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
@@ -128,6 +147,7 @@ export const getProfile = async (req, res) => {
         const user = await User.findById(req.user._id).populate('badges');
         res.json({ user });
     } catch (error) {
+        console.error('Get Profile Error:', error);
         res.status(500).json({ message: 'Error fetching profile' });
     }
 };
