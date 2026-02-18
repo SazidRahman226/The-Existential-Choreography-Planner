@@ -8,6 +8,9 @@ import authRoutes from './routes/authRoutes.js';
 import flowRoutes from './routes/flowRoutes.js';
 import { connectDB } from './config/db.js';
 
+// Register all Mongoose models so populate() works
+import './models/workflow.js';
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
 

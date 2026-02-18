@@ -3,21 +3,40 @@ import mongoose from 'mongoose';
 const TaskSchema = new mongoose.Schema({
     workflowId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Workflow',
-        required: true
+        ref: 'Workflow'
+    },
+    nodeId: {
+        type: String
     },
     title: {
         type: String,
         required: true
+    },
+    description: {
+        type: String,
+        default: ''
     },
     status: {
         type: String,
         enum: ['pending', 'in-progress', 'completed', 'failed'],
         default: 'pending'
     },
+    difficulty: {
+        type: String,
+        enum: ['easy', 'medium', 'hard'],
+        default: 'medium'
+    },
     points: {
         type: Number,
         default: 0
+    },
+    pointsReward: {
+        type: Number,
+        default: 50
+    },
+    energyCost: {
+        type: Number,
+        default: 10
     },
     prerequisites: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -31,3 +50,4 @@ const TaskSchema = new mongoose.Schema({
 });
 
 export const Task = mongoose.model('Task', TaskSchema);
+

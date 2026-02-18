@@ -28,6 +28,7 @@ const CreateFlowModal = ({ onClose, onSuccess }) => {
             onSuccess()
             onClose()
         } catch (err) {
+            console.error('Create flow error:', err)
             setError(err.response?.data?.message || err.message || 'Failed to create flow')
         } finally {
             setLoading(false)
