@@ -39,14 +39,14 @@ const Sidebar = () => {
                     </Link>
                 )}
 
-                {/* Placeholder links for Flows and Tasks if they become separate pages later */}
-                {/* 
                 <Link
-                    to="/flows"
-                    className={`nav-item ${currentPath === '/flows' ? 'active' : ''}`}
+                    to="/dashboard"
+                    className={`nav-item ${currentPath.startsWith('/flow') ? 'active' : ''}`}
                 >
                     <span>🌊</span> Flows
                 </Link>
+
+                {/* 
                 <Link
                     to="/tasks"
                     className={`nav-item ${currentPath === '/tasks' ? 'active' : ''}`}

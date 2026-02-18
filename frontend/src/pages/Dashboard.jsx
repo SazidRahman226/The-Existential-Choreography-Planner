@@ -107,7 +107,13 @@ const Dashboard = () => {
                                 recentFlows.length > 0 ? (
                                     <ul className="dashboard-list">
                                         {recentFlows.map(flow => (
-                                            <li key={flow._id} className="list-item">
+                                            <li
+                                                key={flow._id}
+                                                className="list-item"
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={() => navigate(`/flow/${flow._id}`)}
+                                                title="Open in Canvas Editor"
+                                            >
                                                 <span className="item-title">{flow.title || 'Untitled Flow'}</span>
                                                 <span className={`status-badge ${flow.status || 'draft'}`}>{flow.status || 'Draft'}</span>
                                             </li>

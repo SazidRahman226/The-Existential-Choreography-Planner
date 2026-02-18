@@ -12,6 +12,7 @@ import { Navbar } from './components'
 import { AuthProvider, PopupProvider } from './providers'
 
 import Users from './pages/Users'
+import FlowEditor from './pages/FlowEditor'
 
 function App() {
     return (
@@ -38,6 +39,7 @@ function App() {
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/account" element={<Account />} />
                             <Route path="/users" element={<Users />} />
+                            <Route path="/flow/:id" element={<FlowEditor />} />
                         </Route>
                     </Routes>
                 </Router>
