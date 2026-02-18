@@ -35,8 +35,34 @@ const FlowEditor = () => {
                 const data = await flowService.getById(id)
                 setFlow(data)
                 const flowData = data.flowData || { nodes: [], edges: [] }
-                setNodes(flowData.nodes || [])
-                setEdges(flowData.edges || [])
+                let loadedNodes = flowData.nodes || []
+                let loadedEdges = flowData.edges || []
+
+                // Auto-create Start/End nodes if missing
+                const hasStart = loadedNodes.some(n => n.data?.nodeType === 'start')
+                const hasEnd = loadedNodes.some(n => n.data?.nodeType === 'end')
+
+                if (!hasStart) {
+                    loadedNodes = [{
+                        id: `node_start_${Date.now()}`,
+                        position: { x: 100, y: 300 },
+                        shape: 'rounded',
+                        data: { nodeType: 'start', title: 'Start' }
+                    }, ...loadedNodes]
+                }
+
+                if (!hasEnd) {
+                    const maxX = loadedNodes.reduce((max, n) => Math.max(max, n.position?.x || 0), 0)
+                    loadedNodes = [...loadedNodes, {
+                        id: `node_end_${Date.now()}`,
+                        position: { x: Math.max(maxX + 300, 700), y: 300 },
+                        shape: 'rounded',
+                        data: { nodeType: 'end', title: 'End' }
+                    }]
+                }
+
+                setNodes(loadedNodes)
+                setEdges(loadedEdges)
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load flow')
             } finally {
@@ -52,41 +78,39 @@ const FlowEditor = () => {
     }, [])
 
     const handleNodesChange = useCallback((updater) => {
-        setNodes(prev => {
-            const updated = typeof updater === 'function' ? updater(prev) : updater
-            return updated
-        })
+        setNodes(prev => typeof updater === 'function' ? updater(prev) : updater)
         markUnsaved()
     }, [markUnsaved])
 
     const handleEdgesChange = useCallback((updater) => {
-        setEdges(prev => {
-            const updated = typeof updater === 'function' ? updater(prev) : updater
-            return updated
-        })
+        setEdges(prev => typeof updater === 'function' ? updater(prev) : updater)
         markUnsaved()
     }, [markUnsaved])
 
     // ---- Generate unique node ID ----
     const genNodeId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`
 
-    // ---- Add Node (from template or custom) ----
+    // ---- Add Node (from template) ----
     const handleAddNode = useCallback((template) => {
         const vp = canvasRef.current?.getViewport?.() || { x: 0, y: 0, zoom: 1 }
         const centerX = (400 - vp.x) / vp.zoom
         const centerY = (300 - vp.y) / vp.zoom
         const offset = nodes.length * 40
 
+        const nodeType = template?.nodeType || 'task'
+
         const newNode = {
             id: genNodeId(),
             position: { x: centerX + offset, y: centerY + offset },
-            shape: 'rectangle',
+            shape: nodeType === 'decision' ? 'diamond' : nodeType === 'start' || nodeType === 'end' ? 'rounded' : 'rectangle',
             data: {
+                nodeType,
                 title: template?.label || `Task ${nodes.length + 1}`,
                 description: '',
                 difficulty: template?.difficulty || 'medium',
                 pointsReward: template?.pointsReward ?? 50,
                 energyCost: template?.energyCost ?? 10,
+                duration: template?.duration ?? 30,
                 status: 'pending',
                 templateId: template?.id || null
             }
@@ -105,11 +129,13 @@ const FlowEditor = () => {
             position: { x: canvasX - 100, y: canvasY - 30 },
             shape: 'rectangle',
             data: {
+                nodeType: 'task',
                 title: `Task ${nodes.length + 1}`,
                 description: '',
                 difficulty: 'medium',
                 pointsReward: 50,
                 energyCost: 10,
+                duration: 30,
                 status: 'pending'
             }
         }
@@ -125,13 +151,13 @@ const FlowEditor = () => {
         setNodes(prev => {
             return prev.map(n => {
                 if (n.id !== nodeId) return n
+                if (n.data?.nodeType !== 'task') return n
 
                 const currentStatus = n.data?.status || 'pending'
                 const currentIdx = STATUS_CYCLE.indexOf(currentStatus)
                 const nextIdx = (currentIdx + 1) % STATUS_CYCLE.length
                 const nextStatus = STATUS_CYCLE[nextIdx]
 
-                // Trigger XP popup on completion
                 if (nextStatus === 'completed') {
                     const xp = n.data?.pointsReward || 50
                     setXpPopups(prev => [...prev, {
@@ -142,16 +168,13 @@ const FlowEditor = () => {
                     }])
                 }
 
-                return {
-                    ...n,
-                    data: { ...n.data, status: nextStatus }
-                }
+                return { ...n, data: { ...n.data, status: nextStatus } }
             })
         })
         markUnsaved()
     }, [markUnsaved])
 
-    // ---- Remove XP popup after animation ----
+    // ---- Remove XP popup ----
     const removeXpPopup = useCallback((popupId) => {
         setXpPopups(prev => prev.filter(p => p.id !== popupId))
     }, [])
@@ -182,13 +205,26 @@ const FlowEditor = () => {
         markUnsaved()
     }, [markUnsaved])
 
-    // ---- Delete Node ----
+    // ---- Update Edge (for labels) ----
+    const handleEdgeUpdate = useCallback((edgeId, updates) => {
+        setEdges(prev => prev.map(e =>
+            e.id === edgeId ? { ...e, ...updates } : e
+        ))
+        markUnsaved()
+    }, [markUnsaved])
+
+    // ---- Delete Node (prevent Start/End deletion) ----
     const handleNodeDelete = useCallback((nodeId) => {
+        const node = nodes.find(n => n.id === nodeId)
+        if (node?.data?.nodeType === 'start' || node?.data?.nodeType === 'end') {
+            alert(`Cannot delete the ${node.data.nodeType} node — every flow needs one!`)
+            return
+        }
         setNodes(prev => prev.filter(n => n.id !== nodeId))
         setEdges(prev => prev.filter(e => e.source !== nodeId && e.target !== nodeId))
         setSelectedNodeId(null)
         markUnsaved()
-    }, [markUnsaved])
+    }, [nodes, markUnsaved])
 
     // ---- Delete Edge ----
     const handleEdgeDelete = useCallback((edgeId) => {
@@ -205,7 +241,10 @@ const FlowEditor = () => {
                 flowData: { nodes, edges }
             })
 
-            for (const node of nodes) {
+            // Only sync actual task nodes to backend
+            const taskNodes = nodes.filter(n => n.data?.nodeType === 'task' || !n.data?.nodeType)
+
+            for (const node of taskNodes) {
                 const taskData = {
                     title: node.data.title || 'Untitled Task',
                     description: node.data.description || '',
@@ -259,9 +298,7 @@ const FlowEditor = () => {
                 if (selectedEdgeId) {
                     handleEdgeDelete(selectedEdgeId)
                 } else if (selectedNodeId) {
-                    if (confirm('Delete this node and all its connections?')) {
-                        handleNodeDelete(selectedNodeId)
-                    }
+                    handleNodeDelete(selectedNodeId)
                 }
             }
 
@@ -334,13 +371,15 @@ const FlowEditor = () => {
                 {selectedNode && (
                     <NodeEditPanel
                         node={selectedNode}
+                        edges={edges}
+                        nodes={nodes}
                         onUpdate={handleNodeUpdate}
+                        onUpdateEdge={handleEdgeUpdate}
                         onDelete={handleNodeDelete}
                         onClose={() => setSelectedNodeId(null)}
                     />
                 )}
 
-                {/* XP Popups rendered in viewport coordinates */}
                 <XPPopup popups={xpPopups} onRemove={removeXpPopup} />
             </div>
         </div>

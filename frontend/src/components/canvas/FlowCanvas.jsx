@@ -211,10 +211,23 @@ const FlowCanvas = ({
         const node = nodes.find(n => n.id === nodeId)
         if (!node) return null
 
-        const nodeWidth = node.shape === 'diamond' ? 100 : 200
-        const nodeHeight = node.shape === 'diamond' ? 100 : 60
+        const nodeType = node.data?.nodeType || 'task'
 
-        if (node.shape === 'diamond') {
+        // Node dimensions by type
+        let nodeWidth, nodeHeight
+        if (nodeType === 'decision' || node.shape === 'diamond') {
+            nodeWidth = 110
+            nodeHeight = 110
+        } else if (nodeType === 'start' || nodeType === 'end') {
+            nodeWidth = 120
+            nodeHeight = 50
+        } else {
+            nodeWidth = 200
+            nodeHeight = 60
+        }
+
+        // Diamond nodes: handles at top/bottom center
+        if (nodeType === 'decision' || node.shape === 'diamond') {
             if (handleType === 'output') {
                 return { x: node.position.x + nodeWidth / 2, y: node.position.y + nodeHeight }
             } else {
@@ -222,6 +235,7 @@ const FlowCanvas = ({
             }
         }
 
+        // All other nodes: handles at left/right center
         if (handleType === 'output') {
             return { x: node.position.x + nodeWidth, y: node.position.y + nodeHeight / 2 }
         } else {

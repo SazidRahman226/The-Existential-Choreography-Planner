@@ -38,6 +38,10 @@ const TaskSchema = new mongoose.Schema({
         type: Number,
         default: 10
     },
+    duration: {
+        type: Number,
+        default: 30
+    },
     prerequisites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Task'

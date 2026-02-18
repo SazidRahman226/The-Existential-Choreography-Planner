@@ -1058,3 +1058,295 @@
 .toolbar-group {
     position: relative;
 }
+
+/* ======================================================
+   PARTITION A+B — Special Nodes, Edge Labels, Duration
+   ====================================================== */
+
+/* ---- Start Node ---- */
+.canvas-node.nodetype-start .node-body {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 2px solid #22c55e;
+    box-shadow: 0 4px 0 #15803d;
+    text-align: center;
+    padding: 0.75rem 1.5rem;
+    min-width: 120px;
+}
+
+.canvas-node.nodetype-start:hover .node-body {
+    border-color: #16a34a;
+    box-shadow: 0 6px 0 rgba(34, 197, 94, 0.4);
+}
+
+.canvas-node.nodetype-start.selected .node-body {
+    box-shadow: 0 6px 0 #15803d, 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+/* ---- End Node ---- */
+.canvas-node.nodetype-end .node-body {
+    background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+    border: 2px solid #ef4444;
+    box-shadow: 0 4px 0 #b91c1c;
+    text-align: center;
+    padding: 0.75rem 1.5rem;
+    min-width: 120px;
+}
+
+.canvas-node.nodetype-end:hover .node-body {
+    border-color: #dc2626;
+    box-shadow: 0 6px 0 rgba(239, 68, 68, 0.4);
+}
+
+.canvas-node.nodetype-end.selected .node-body {
+    box-shadow: 0 6px 0 #b91c1c, 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* ---- Decision Node ---- */
+.canvas-node.nodetype-decision .node-body {
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    border: 2px solid #8b5cf6;
+    box-shadow: 0 4px 0 #6d28d9;
+    min-width: 110px;
+    min-height: 110px;
+}
+
+.canvas-node.nodetype-decision:hover .node-body {
+    border-color: #7c3aed;
+    box-shadow: 0 6px 0 rgba(139, 92, 246, 0.4);
+}
+
+.canvas-node.nodetype-decision.selected .node-body {
+    box-shadow: 0 6px 0 #6d28d9, 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+/* ---- Special Node Inner Content ---- */
+.special-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.special-node-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.special-node-label {
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.start-node-inner .special-node-label {
+    color: #16a34a;
+}
+
+.end-node-inner .special-node-label {
+    color: #dc2626;
+}
+
+/* ---- Decision Node Inner ---- */
+.decision-node-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    text-align: center;
+}
+
+.decision-icon {
+    font-size: 1.25rem;
+}
+
+.decision-title {
+    font-size: 0.75rem !important;
+    word-break: break-word;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    max-width: 100px;
+}
+
+/* ---- Edge Labels ---- */
+.edge-label-bg {
+    fill: #ffffff;
+    stroke: var(--border-color);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.edge-label-text {
+    font-size: 11px;
+    font-weight: 700;
+    fill: var(--text-primary);
+    font-family: inherit;
+    pointer-events: none;
+}
+
+/* ---- Edge Label Editor (in NodeEditPanel) ---- */
+.edge-label-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.edge-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.edge-label-target {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.edge-label-input {
+    flex: 1;
+    padding: 0.4rem 0.6rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.edge-label-input:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    background: #ffffff;
+}
+
+/* ---- Special Node Info Panel ---- */
+.special-node-info {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+}
+
+.special-node-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* ---- Template Decision Highlight ---- */
+.template-decision {
+    border-top: 2px solid var(--border-color);
+    background: #faf5ff !important;
+}
+
+.template-decision:hover {
+    background: #f3e8ff !important;
+}
+
+/* ---- Duration Picker ---- */
+.duration-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.duration-option {
+    padding: 0.45rem 0.7rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.duration-option:hover {
+    border-color: #d5d5d5;
+    transform: translateY(-1px);
+}
+
+.duration-option.active {
+    background: #e0f2fe;
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+    box-shadow: 0 2px 0 var(--secondary-shadow);
+}
+
+.duration-custom {
+    width: 60px;
+    padding: 0.45rem 0.5rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: inherit;
+    text-align: center;
+}
+
+.duration-custom:focus {
+    outline: none;
+    border-color: var(--secondary-color);
+    background: #ffffff;
+}
+
+/* ---- Duration badge on node ---- */
+.meta-item.duration {
+    color: #6366f1;
+    font-weight: 700;
+}
+
+/* ---- Active Running Node ---- */
+.canvas-node.node-active-running .node-body {
+    border-color: #f59e0b;
+    box-shadow: 0 4px 0 #d97706, 0 0 20px rgba(245, 158, 11, 0.3);
+    animation: runnerPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes runnerPulse {
+    from {
+        box-shadow: 0 4px 0 #d97706, 0 0 12px rgba(245, 158, 11, 0.2);
+    }
+
+    to {
+        box-shadow: 0 4px 0 #d97706, 0 0 24px rgba(245, 158, 11, 0.5);
+    }
+}
+
+/* ---- Node Countdown Overlay ---- */
+.node-countdown-overlay {
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    background: #fef3c7;
+    border: 2px solid #f59e0b;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 900;
+    color: #92400e;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    animation: countdownBlink 1s ease-in-out infinite;
+}
+
+@keyframes countdownBlink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}

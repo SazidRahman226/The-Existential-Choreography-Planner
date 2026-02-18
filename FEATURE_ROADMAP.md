@@ -28,6 +28,48 @@
 
 ## Phase 2 — Timed Tasks & Flow Runner ⏱️
 
+### Special Node Types
+
+#### 🟢 Start Node (Rounded)
+- Entry point of the flow — **"▶ Start Flow"** begins execution here
+- A flow **must have exactly one Start node** to be runnable
+- Auto-created when a new flow is first opened (if no Start exists)
+- Stores the **flow start time** for schedule view
+- No timer or task data — just a trigger point
+
+#### 🔴 End Node (Rounded)
+- Marks flow completion — when the runner reaches this, it triggers:
+  - **Celebration screen** / confetti burst
+  - **End-of-day report card** (Phase 5)
+  - **Completion bonus XP** from the flow
+- A flow **must have exactly one End node**
+- Auto-created alongside Start node
+
+#### 🔷 Decision Node (Diamond)
+- **Branching point** — pauses the flow and asks the user a question
+- The node title becomes the **question** (e.g., *"Did you understand the material?"*)
+- Each outgoing edge is a **labeled path** (e.g., "Yes" / "No" / custom)
+- When the runner reaches a decision:
+  1. Shows a **popup with the question + options** (one button per outgoing edge)
+  2. User picks an answer
+  3. Runner follows that edge to the next node
+- Enables **loops** (e.g., "Didn't get it?" → go back to Study) and **branches**
+- No timer, points, or energy — purely a routing mechanism
+
+#### Example Flow
+```
+🟢 Start → 📖 Study Math → 🔷 "Got it?" 
+                               ├─ ✅ Yes → ✍️ Practice → 🔴 End
+                               └─ ❌ No  → 📝 Re-read Notes → 📖 Study Math (loop)
+```
+
+### Edge Labels
+- Edges from Decision nodes have **text labels** ("Yes", "No", or custom)
+- Labels are editable by clicking the edge or from the Decision node's edit panel
+- Regular task→task edges remain unlabeled
+
+---
+
 ### Timer on Nodes
 - Each task has a `duration` field (quick presets: 15m / 30m / 45m / 1hr / Custom)
 - Live countdown displayed directly on the node during execution
@@ -35,7 +77,10 @@
 
 ### Flow Execution Engine
 - **"▶ Start Flow"** button in the toolbar
-- Executes tasks in dependency order (respects edge connections)
+- Finds the **Start node** and follows edges in dependency order
+- At **task nodes**: runs the timer, then moves to the next
+- At **decision nodes**: pauses and shows choice popup
+- At **End node**: triggers completion
 - States: `idle → running → paused → completed`
 - Ability to **pause** and **resume** the flow
 
