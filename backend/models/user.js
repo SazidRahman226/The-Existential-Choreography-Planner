@@ -81,6 +81,10 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 1
     },
+    lastSessionDate: {
+        type: Date,
+        default: null
+    },
     badges: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Badge'

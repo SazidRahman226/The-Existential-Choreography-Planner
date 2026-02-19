@@ -20,6 +20,14 @@ const taskService = {
     delete: async (id) => {
         const response = await api.delete(`/tasks/${id}`);
         return response.data;
+    },
+    completeTask: async (id, data) => {
+        const response = await api.patch(`/tasks/${id}/complete`, data);
+        return response.data;
+    },
+    getHistory: async (id) => {
+        const response = await api.get(`/tasks/${id}/history`);
+        return response.data;
     }
 };
 

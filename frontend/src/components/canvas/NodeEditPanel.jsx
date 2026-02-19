@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import SESSION_MODES from '../../config/sessionModes'
 
 const DIFFICULTY_PRESETS = {
     easy: { pointsReward: 25, energyCost: 5, label: 'Easy', emoji: '🟢' },
@@ -18,6 +19,7 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
         pointsReward: 50,
         energyCost: 10,
         duration: 30,
+        sessionMode: 'focus',
         shape: 'rectangle',
         showAdvanced: false
     })
@@ -31,6 +33,7 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                 pointsReward: node.data?.pointsReward ?? 50,
                 energyCost: node.data?.energyCost ?? 10,
                 duration: node.data?.duration ?? 30,
+                sessionMode: node.data?.sessionMode || 'focus',
                 shape: node.shape || 'rectangle',
                 showAdvanced: false
             })
@@ -50,6 +53,7 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                 pointsReward: parseInt(updates.pointsReward !== undefined ? updates.pointsReward : formData.pointsReward) || 0,
                 energyCost: parseInt(updates.energyCost !== undefined ? updates.energyCost : formData.energyCost) || 0,
                 duration: parseInt(updates.duration !== undefined ? updates.duration : formData.duration) || 30,
+                sessionMode: updates.sessionMode !== undefined ? updates.sessionMode : formData.sessionMode,
                 status: node.data?.status || 'pending'
             }
         })
@@ -227,16 +231,19 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                                 {mins}m
                             </button>
                         ))}
-                        <input
-                            type="number"
-                            name="duration"
-                            value={formData.duration}
-                            onChange={handleChange}
-                            min="1"
-                            max="480"
-                            className="duration-custom"
-                            title="Custom duration in minutes"
-                        />
+                        <div className={`duration-custom-wrapper ${!DURATION_PRESETS.includes(Number(formData.duration)) ? 'active' : ''}`}>
+                            <input
+                                type="number"
+                                name="duration"
+                                value={formData.duration}
+                                onChange={handleChange}
+                                min="1"
+                                max="480"
+                                className="duration-custom"
+                                title="Custom duration in minutes"
+                            />
+                            <span className="duration-unit">min</span>
+                        </div>
                     </div>
                 </div>
 
@@ -252,6 +259,27 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                                 <span className="difficulty-emoji">{preset.emoji}</span>
                                 <span className="difficulty-label">{preset.label}</span>
                                 <span className="difficulty-stats">⭐{preset.pointsReward} ⚡{preset.energyCost}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label>Session Mode</label>
+                    <div className="mode-selector">
+                        {Object.entries(SESSION_MODES).map(([key, mode]) => (
+                            <button
+                                key={key}
+                                className={`mode-option ${formData.sessionMode === key ? 'active' : ''}`}
+                                onClick={() => {
+                                    setFormData(prev => ({ ...prev, sessionMode: key }))
+                                    pushUpdate({ sessionMode: key })
+                                }}
+                                style={formData.sessionMode === key ? { borderColor: mode.ring, background: `${mode.ring}18` } : {}}
+                                title={mode.label}
+                            >
+                                <span className="mode-emoji">{mode.emoji}</span>
+                                <span className="mode-label">{mode.label}</span>
                             </button>
                         ))}
                     </div>

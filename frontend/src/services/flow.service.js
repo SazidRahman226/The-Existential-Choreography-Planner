@@ -20,6 +20,10 @@ const flowService = {
     delete: async (id) => {
         const response = await api.delete(`/flows/${id}`);
         return response.data;
+    },
+    completeFlow: async (id, data) => {
+        const response = await api.patch(`/flows/${id}/complete-flow`, data);
+        return response.data;
     }
 };
 

@@ -2,10 +2,18 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import flowService from '../services/flow.service'
 import taskService from '../services/task.service'
+import SESSION_MODES from '../config/sessionModes'
 import FlowCanvas from '../components/canvas/FlowCanvas'
 import CanvasToolbar from '../components/canvas/CanvasToolbar'
 import NodeEditPanel from '../components/canvas/NodeEditPanel'
 import XPPopup from '../components/canvas/XPPopup'
+import DecisionPopup from '../components/canvas/DecisionPopup'
+import CompletionCelebration from '../components/canvas/CompletionCelebration'
+import PostTaskReview from '../components/canvas/PostTaskReview'
+import ReflectionCard from '../components/canvas/ReflectionCard'
+import FocusOverlay from '../components/canvas/FocusOverlay'
+import useFlowRunner from '../hooks/useFlowRunner'
+import useAmbientAudio from '../hooks/useAmbientAudio'
 import '../styles/canvas.css'
 
 const STATUS_CYCLE = ['pending', 'in-progress', 'completed']
@@ -22,11 +30,46 @@ const FlowEditor = () => {
     const [error, setError] = useState(null)
     const [saveStatus, setSaveStatus] = useState('saved')
     const [xpPopups, setXpPopups] = useState([])
+    const [sessionEarnedXP, setSessionEarnedXP] = useState(0)
+    const [flowBonus, setFlowBonus] = useState(null)
+    const [reflectionData, setReflectionData] = useState(null)
 
     const [selectedNodeId, setSelectedNodeId] = useState(null)
     const [selectedEdgeId, setSelectedEdgeId] = useState(null)
 
     const selectedNode = nodes.find(n => n.id === selectedNodeId) || null
+
+    // ---- Flow Runner ----
+    const runner = useFlowRunner(nodes, edges, setNodes)
+
+    // ---- Focus Mode & Audio ----
+    const [isFocusActive, setIsFocusActive] = useState(false)
+    const ambientAudio = useAmbientAudio()
+
+    // Start/switch audio when focus is active and active node changes
+    useEffect(() => {
+        if (isFocusActive && runner.activeNode) {
+            const modeKey = runner.activeNode.data?.sessionMode || 'focus'
+            const mode = SESSION_MODES[modeKey]
+            if (mode?.audio) {
+                ambientAudio.play(mode.audio)
+            }
+        } else if (!isFocusActive) {
+            ambientAudio.stop()
+        }
+    }, [isFocusActive, runner.activeNodeId])
+
+    // Exit focus mode when runner stops or completes
+    useEffect(() => {
+        if (runner.isIdle || runner.isCompleted) {
+            setIsFocusActive(false)
+            ambientAudio.stop()
+        }
+    }, [runner.isIdle, runner.isCompleted])
+
+    const toggleFocus = useCallback(() => {
+        setIsFocusActive(prev => !prev)
+    }, [])
 
     // ---- Load Flow ----
     useEffect(() => {
@@ -111,6 +154,7 @@ const FlowEditor = () => {
                 pointsReward: template?.pointsReward ?? 50,
                 energyCost: template?.energyCost ?? 10,
                 duration: template?.duration ?? 30,
+                sessionMode: template?.sessionMode || 'focus',
                 status: 'pending',
                 templateId: template?.id || null
             }
@@ -124,6 +168,8 @@ const FlowEditor = () => {
 
     // ---- Double-click to add node at position ----
     const handleDoubleClickAdd = useCallback((canvasX, canvasY) => {
+        if (!runner.isIdle) return // Don't add nodes while running
+
         const newNode = {
             id: genNodeId(),
             position: { x: canvasX - 100, y: canvasY - 30 },
@@ -144,10 +190,12 @@ const FlowEditor = () => {
         setSelectedNodeId(newNode.id)
         setSelectedEdgeId(null)
         markUnsaved()
-    }, [nodes.length, markUnsaved])
+    }, [nodes.length, markUnsaved, runner.isIdle])
 
-    // ---- Status cycling ----
+    // ---- Status cycling (only when runner is idle) ----
     const handleStatusCycle = useCallback((nodeId) => {
+        if (!runner.isIdle) return // Don't manually cycle during a run
+
         setNodes(prev => {
             return prev.map(n => {
                 if (n.id !== nodeId) return n
@@ -172,7 +220,7 @@ const FlowEditor = () => {
             })
         })
         markUnsaved()
-    }, [markUnsaved])
+    }, [markUnsaved, runner.isIdle])
 
     // ---- Remove XP popup ----
     const removeXpPopup = useCallback((popupId) => {
@@ -237,12 +285,11 @@ const FlowEditor = () => {
     const handleSave = useCallback(async () => {
         setSaveStatus('saving')
         try {
-            await flowService.update(id, {
-                flowData: { nodes, edges }
-            })
+            // Build a mutable copy so we can patch in taskIds before saving flowData
+            let updatedNodes = [...nodes]
 
-            // Only sync actual task nodes to backend
-            const taskNodes = nodes.filter(n => n.data?.nodeType === 'task' || !n.data?.nodeType)
+            // 1. Sync task nodes to backend FIRST, collecting any new taskIds
+            const taskNodes = updatedNodes.filter(n => n.data?.nodeType === 'task' || !n.data?.nodeType)
 
             for (const node of taskNodes) {
                 const taskData = {
@@ -257,7 +304,7 @@ const FlowEditor = () => {
                     prerequisites: edges
                         .filter(e => e.target === node.id)
                         .map(e => {
-                            const srcNode = nodes.find(n => n.id === e.source)
+                            const srcNode = updatedNodes.find(n => n.id === e.source)
                             return srcNode?.data?.taskId
                         })
                         .filter(Boolean)
@@ -267,14 +314,22 @@ const FlowEditor = () => {
                     await taskService.update(node.data.taskId, taskData)
                 } else {
                     const created = await taskService.create(taskData)
-                    setNodes(prev => prev.map(n =>
+                    // Patch the taskId into our local copy
+                    updatedNodes = updatedNodes.map(n =>
                         n.id === node.id
                             ? { ...n, data: { ...n.data, taskId: created._id } }
                             : n
-                    ))
+                    )
                 }
             }
 
+            // 2. Save flowData WITH the taskIds baked in
+            await flowService.update(id, {
+                flowData: { nodes: updatedNodes, edges }
+            })
+
+            // 3. Update React state with the taskId-enriched nodes
+            setNodes(updatedNodes)
             setSaveStatus('saved')
         } catch (err) {
             console.error('Save failed:', err)
@@ -294,6 +349,9 @@ const FlowEditor = () => {
         const handleKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
 
+            // Don't allow delete while running
+            if (!runner.isIdle && (e.key === 'Delete' || e.key === 'Backspace')) return
+
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 if (selectedEdgeId) {
                     handleEdgeDelete(selectedEdgeId)
@@ -311,11 +369,105 @@ const FlowEditor = () => {
                 e.preventDefault()
                 handleSave()
             }
+
+            // Space to pause/resume
+            if (e.key === ' ' && !runner.isIdle) {
+                e.preventDefault()
+                if (runner.isRunning) runner.pauseFlow()
+                else if (runner.isPaused) runner.resumeFlow()
+            }
         }
 
         window.addEventListener('keydown', handleKeyDown)
         return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [selectedNodeId, selectedEdgeId, handleEdgeDelete, handleNodeDelete, handleSave])
+    }, [selectedNodeId, selectedEdgeId, handleEdgeDelete, handleNodeDelete, handleSave, runner])
+
+    // ---- Handle Review Complete ----
+    const handleReviewComplete = (outcome, xpResult) => {
+        if (xpResult?.earnedXP > 0) {
+            setSessionEarnedXP(prev => prev + xpResult.earnedXP)
+
+            // Show popup near the active node
+            const node = nodes.find(n => n.id === runner.activeNodeId)
+            if (node) {
+                const id = Date.now()
+                setXpPopups(prev => [...prev, {
+                    id,
+                    amount: xpResult.earnedXP,
+                    x: node.position.x + 100,
+                    y: node.position.y
+                }])
+                // Auto remove after 2s
+                setTimeout(() => {
+                    setXpPopups(prev => prev.filter(p => p.id !== id))
+                }, 2000)
+            }
+        }
+        runner.resolveReview(outcome, xpResult)
+    }
+
+    // ---- Call Flow Completion API when celebration shows ----
+    useEffect(() => {
+        if (runner.showCelebration && id) {
+            flowService.completeFlow(id, {
+                completedOnTime: runner.onTimeCount,
+                totalTasks: runner.totalTaskNodes
+            }).then(result => {
+                setFlowBonus(result)
+                if (result.bonusXP > 0) {
+                    setSessionEarnedXP(prev => prev + result.bonusXP)
+                }
+            }).catch(err => {
+                console.error('Flow completion bonus error:', err)
+            })
+        } else if (!runner.showCelebration) {
+            setFlowBonus(null)
+        }
+    }, [runner.showCelebration])
+
+    // ---- Fetch task history for reflection when runner waits for it ----
+    useEffect(() => {
+        if (!runner.waitingForReflection || !runner.activeNode) return
+
+        const taskId = runner.activeNode.data?.taskId
+        const nodeType = runner.activeNode.data?.nodeType || 'task'
+
+        if (taskId && nodeType === 'task') {
+            taskService.getHistory(taskId).then(data => {
+                if (data.history && data.history.length > 0) {
+                    setReflectionData({
+                        ...data,
+                        taskTitle: runner.activeNode.data?.title || 'Task'
+                    })
+                } else {
+                    // No history — skip reflection, go straight to countdown
+                    runner.confirmTaskStart()
+                }
+            }).catch(() => {
+                // API failed — skip reflection, go straight to countdown
+                runner.confirmTaskStart()
+            })
+        } else {
+            // No taskId — skip reflection, go straight to countdown
+            runner.confirmTaskStart()
+        }
+    }, [runner.waitingForReflection, runner.activeNodeId])
+
+    // ---- Handle reflection Start button ----
+    const handleReflectionStart = useCallback(() => {
+        setReflectionData(null)
+        runner.confirmTaskStart()
+    }, [runner])
+
+    // ---- Handle reflection Edit button ----
+    const handleReflectionEdit = useCallback(() => {
+        if (runner.activeNodeId) {
+            setSelectedNodeId(runner.activeNodeId)
+        }
+        setReflectionData(null)
+        runner.confirmTaskStart()
+    }, [runner])
+
 
     if (loading) {
         return (
@@ -350,6 +502,9 @@ const FlowEditor = () => {
                 onFitView={fitView}
                 onSave={handleSave}
                 onBack={() => navigate('/dashboard')}
+                runner={runner}
+                onToggleFocus={toggleFocus}
+                isFocusActive={isFocusActive}
             />
 
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -366,9 +521,14 @@ const FlowEditor = () => {
                     onDoubleClickAdd={handleDoubleClickAdd}
                     onStatusCycle={handleStatusCycle}
                     containerRef={canvasRef}
+                    runnerState={runner.isIdle ? null : {
+                        activeNodeId: runner.activeNodeId,
+                        timeRemaining: runner.timeRemaining
+                    }}
                 />
 
-                {selectedNode && (
+                {/* Node Edit Panel — only when idle */}
+                {selectedNode && runner.isIdle && (
                     <NodeEditPanel
                         node={selectedNode}
                         edges={edges}
@@ -380,7 +540,80 @@ const FlowEditor = () => {
                     />
                 )}
 
+                {/* XP Popups */}
                 <XPPopup popups={xpPopups} onRemove={removeXpPopup} />
+
+                {/* Pre-Task Reflection Card */}
+                {reflectionData && runner.waitingForReflection && (
+                    <ReflectionCard
+                        history={reflectionData.history}
+                        bestTime={reflectionData.bestTime}
+                        suggestedDuration={reflectionData.suggestedDuration}
+                        taskTitle={reflectionData.taskTitle}
+                        onStart={handleReflectionStart}
+                        onEdit={handleReflectionEdit}
+                    />
+                )}
+
+                {/* Countdown Buffer */}
+                {runner.countdownSeconds > 0 && (
+                    <div className="countdown-overlay">
+                        <div className="countdown-content">
+                            <p className="countdown-label">Starting in</p>
+                            <div className="countdown-number">{runner.countdownSeconds}</div>
+                            <p className="countdown-task-name">{runner.activeNode?.data?.title || 'Task'}</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Post-Task Review Popup */}
+                {runner.reviewPending && (
+                    <PostTaskReview
+                        taskTitle={runner.reviewPending.taskTitle}
+                        taskDifficulty={runner.reviewPending.taskDifficulty}
+                        taskId={runner.reviewPending.taskId}
+                        timeRemainingPercent={runner.reviewPending.timeRemainingPercent}
+                        totalDuration={runner.reviewPending.totalDuration}
+                        actualTimeSpent={runner.reviewPending.actualTimeSpent}
+                        streakCount={runner.streakCount}
+                        usedFocusOverlay={isFocusActive}
+                        sessionMode={runner.activeNode?.data?.sessionMode || 'focus'}
+                        onComplete={handleReviewComplete}
+                    />
+                )}
+
+                {/* Decision Popup */}
+                <DecisionPopup
+                    decision={runner.decisionPending}
+                    onChoose={runner.makeDecision}
+                />
+
+                {/* Completion Celebration */}
+                <CompletionCelebration
+                    show={runner.showCelebration}
+                    completedCount={runner.completedNodeIds.length}
+                    totalXP={sessionEarnedXP}
+                    flowBonus={flowBonus}
+                    onDismiss={runner.dismissCelebration}
+                />
+
+                {/* Focus Overlay */}
+                {isFocusActive && runner.activeNode && (
+                    <FocusOverlay
+                        activeNode={runner.activeNode}
+                        timeRemaining={runner.timeRemaining}
+                        totalDuration={(runner.activeNode.data?.duration || 1) * 60}
+                        isRunning={runner.isRunning}
+                        isPaused={runner.isPaused}
+                        onPause={runner.pauseFlow}
+                        onResume={runner.resumeFlow}
+                        onSkip={runner.skipTask}
+                        onExit={() => setIsFocusActive(false)}
+                        audioVolume={ambientAudio.volume}
+                        onVolumeChange={ambientAudio.setVolume}
+                        isAudioPlaying={ambientAudio.isPlaying}
+                    />
+                )}
             </div>
         </div>
     )

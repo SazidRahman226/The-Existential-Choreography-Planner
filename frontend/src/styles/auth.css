@@ -1322,3 +1322,178 @@
     color: var(--text-secondary);
     font-style: italic;
 }
+
+/* ========================================
+   DASHBOARD STATS BAR
+   ======================================== */
+
+.stats-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.stats-bar-loading {
+    min-height: 72px;
+}
+
+.stat-skeleton {
+    flex: 1;
+    min-width: 120px;
+    height: 68px;
+    background: linear-gradient(90deg, var(--bg-secondary) 25%, #e5e7eb 50%, var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+    border-radius: 14px;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: 0 2px 0 var(--border-color);
+    min-width: 130px;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-card .stat-icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.stat-card .stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-card .stat-label {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stat-card .stat-value {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.stat-card .stat-sublabel {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* XP Card */
+.stat-xp {
+    flex: 2;
+    min-width: 200px;
+}
+
+.xp-bar-wrapper {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 2px 0;
+}
+
+.xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa, #6366f1);
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Energy Card */
+.stat-energy {
+    flex: 1.5;
+    min-width: 180px;
+}
+
+.stat-energy.low {
+    border-color: #fbbf24;
+    background: #fffbeb;
+}
+
+.energy-bar-wrapper {
+    position: relative;
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 2px 0;
+}
+
+.stat-energy .energy-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #38bdf8, #0deaec);
+    border-radius: 5px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-energy.low .energy-bar-fill {
+    background: linear-gradient(90deg, #fbbf24, #f97316);
+}
+
+.energy-text {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.4);
+}
+
+/* Warning Card */
+.stat-warning {
+    padding: 0.6rem 1rem;
+    background: #fffbeb;
+    border-color: #fbbf24;
+}
+
+.stat-warning-text {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #92400e;
+}
+
+/* Level Card */
+.stat-level {
+    border-color: #fbbf24;
+    background: #fffbeb;
+}
+
+@media (max-width: 768px) {
+    .stats-bar {
+        flex-direction: column;
+    }
+
+    .stat-card {
+        min-width: auto;
+    }
+}

@@ -13,5 +13,6 @@ router.post('/', flowController.create);
 router.get('/:id', flowController.getById);
 router.put('/:id', flowController.update);
 router.delete('/:id', flowController.delete);
+router.patch('/:id/complete-flow', flowController.completeFlow);
 
 export default router;

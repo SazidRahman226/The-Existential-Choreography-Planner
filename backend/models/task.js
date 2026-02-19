@@ -42,6 +42,19 @@ const TaskSchema = new mongoose.Schema({
         type: Number,
         default: 30
     },
+    history: [{
+        date: { type: Date, default: Date.now },
+        outcome: { type: String, enum: ['completed', 'completed_late', 'failed', 'skipped'] },
+        reason: String,
+        note: String,
+        actualTime: Number,
+        estimatedTime: Number,
+        earnedXP: Number
+    }],
+    bestTime: {
+        type: Number,
+        default: null
+    },
     prerequisites: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Task'

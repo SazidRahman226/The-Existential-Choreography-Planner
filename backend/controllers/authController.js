@@ -2,7 +2,8 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
-import { Badge } from '../models/badge.js'; // Import to ensure schema registration
+import { Badge } from '../models/badge.js';
+import { calculateLevel, getTitleForLevel, xpForLevel, getEnergyWarning } from '../utils/gamification.js';
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
@@ -306,6 +307,59 @@ export const resetPasswordController = async (req, res) => {
 
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+
+// Get gamification stats for the current user
+export const getStats = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Apply passive energy regen
+        await user.updateEnergy();
+
+        // Calculate level and title
+        const level = calculateLevel(user.points);
+        const title = getTitleForLevel(level);
+
+        // XP progress within current level
+        const currentLevelXP = xpForLevel(level);
+        const nextLevelXP = xpForLevel(level + 1);
+        const xpInCurrentLevel = user.points - currentLevelXP;
+        const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+        const xpPercent = xpNeededForNextLevel > 0
+            ? Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100)
+            : 100;
+
+        // Energy regen ETA
+        let energyRegenETA = null;
+        if (user.energy < 100) {
+            const energyNeeded = 100 - user.energy;
+            const minutesNeeded = energyNeeded * 6; // 6 min per 1 energy
+            const hours = Math.floor(minutesNeeded / 60);
+            const mins = minutesNeeded % 60;
+            energyRegenETA = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        }
+
+        res.json({
+            level,
+            title,
+            totalXP: user.points,
+            xpProgress: {
+                current: xpInCurrentLevel,
+                needed: xpNeededForNextLevel,
+                percent: xpPercent
+            },
+            energy: user.energy,
+            maxEnergy: 100,
+            energyRegenETA,
+            energyWarning: getEnergyWarning(user.energy),
+            lastSessionDate: user.lastSessionDate
+        });
+    } catch (error) {
+        console.error('Get Stats Error:', error);
+        res.status(500).json({ message: 'Error fetching stats' });
     }
 };
 

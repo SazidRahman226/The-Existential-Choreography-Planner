@@ -7,7 +7,7 @@ services:
       - "3000:3000"
     container_name: choreography-backend
     environment:
-      - MONGO_URI=mongodb://mongo:27017/choreography-planner
+      - MONGO_URI=${MONGO_URI}
       - PORT=3000
       - JWT_SECRET=your-super-secret-jwt-key-change-in-production
       - JWT_EXPIRES_IN=15m

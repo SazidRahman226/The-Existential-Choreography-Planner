@@ -14,7 +14,8 @@ const FlowCanvas = ({
     onEdgeDelete,
     onDoubleClickAdd,
     onStatusCycle,
-    containerRef
+    containerRef,
+    runnerState
 }) => {
     const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
     const [isPanning, setIsPanning] = useState(false)
@@ -316,6 +317,7 @@ const FlowCanvas = ({
                         onDragStart={handleNodeDragStart}
                         onConnectionStart={handleConnectionStart}
                         onStatusCycle={onStatusCycle}
+                        runnerState={runnerState}
                         zoom={viewport.zoom}
                     />
                 ))}
