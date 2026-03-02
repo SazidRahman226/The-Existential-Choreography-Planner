@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import taskService from '../../services/task.service'
 
 const FAILURE_REASONS = [
@@ -19,16 +19,24 @@ const PostTaskReview = ({
     streakCount,
     usedFocusOverlay,
     sessionMode,
+    earlyComplete,    // if true, auto-submit as 'completed' (no outcome question)
     onComplete  // called with (outcome, xpResult) after API responds
 }) => {
-    const [step, setStep] = useState('outcome') // 'outcome' | 'failure' | 'result'
-    const [outcome, setOutcome] = useState(null)
+    const [step, setStep] = useState(earlyComplete ? 'submitting' : 'outcome') // 'outcome' | 'failure' | 'late' | 'submitting' | 'result'
+    const [outcome, setOutcome] = useState(earlyComplete ? 'completed' : null)
     const [reason, setReason] = useState('')
     const [note, setNote] = useState('')
     const [overtimeMinutes, setOvertimeMinutes] = useState(0)
     const [xpResult, setXpResult] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+
+    // Auto-submit on mount when earlyComplete is true
+    useEffect(() => {
+        if (earlyComplete) {
+            submitReview('completed')
+        }
+    }, []) // intentional: run only on mount
 
     const handleOutcomeSelect = async (selectedOutcome) => {
         setOutcome(selectedOutcome)
@@ -105,10 +113,18 @@ const PostTaskReview = ({
             <div className="post-review-card">
                 {/* Header */}
                 <div className="post-review-header">
-                    <span className="post-review-icon">⏰</span>
-                    <h3>Time's Up!</h3>
+                    <span className="post-review-icon">{earlyComplete ? '✅' : '⏰'}</span>
+                    <h3>{earlyComplete ? 'Finished Early!' : "Time's Up!"}</h3>
                     <p className="post-review-task-title">{taskTitle}</p>
                 </div>
+
+                {/* Step: Auto-submitting (early completion) */}
+                {step === 'submitting' && (
+                    <div className="post-review-body" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                        <p className="post-review-question">Calculating your XP...</p>
+                        <div style={{ fontSize: '2rem', animation: 'pulse 1s infinite' }}>⭐</div>
+                    </div>
+                )}
 
                 {/* Step: Outcome Selection */}
                 {step === 'outcome' && (

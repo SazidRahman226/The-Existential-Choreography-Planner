@@ -98,6 +98,7 @@ const ReflectionCard = ({ history, bestTime, suggestedDuration, taskTitle, onSta
                 </div>
 
                 {/* Action buttons */}
+                <p className="reflection-hint">Timer starts when you press Start</p>
                 <div className="reflection-actions">
                     <button className="reflection-start-btn" onClick={onStart}>
                         Start Task 🚀

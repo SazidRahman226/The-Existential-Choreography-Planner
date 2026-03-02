@@ -121,6 +121,13 @@ const CanvasToolbar = ({
                                 ⏸ Pause
                             </button>
                             <button
+                                className="toolbar-btn runner-done"
+                                onClick={runner.completeTaskEarly}
+                                title="Mark task as done (early completion)"
+                            >
+                                ✓ Done
+                            </button>
+                            <button
                                 className="toolbar-btn runner-skip"
                                 onClick={runner.skipTask}
                                 title="Skip current task"
@@ -171,6 +178,22 @@ const CanvasToolbar = ({
                         </button>
                     )}
 
+                    {/* Waiting state for pinned nodes */}
+                    {runner.isWaiting && (
+                        <>
+                            <div className="runner-waiting-info">
+                                ⏳ Starts in <span className="runner-waiting-time">{runner.waitingCountdown}</span>
+                            </div>
+                            <button
+                                className="toolbar-btn runner-start"
+                                onClick={runner.startNow}
+                                title="Override schedule and start now"
+                            >
+                                ▶ Start Now
+                            </button>
+                        </>
+                    )}
+
                     {/* Timer display */}
                     {(runner.isRunning || runner.isPaused) && runner.timeRemaining > 0 && (
                         <div className={`runner-timer ${runner.isPaused ? 'paused' : ''}`}>
@@ -186,6 +209,13 @@ const CanvasToolbar = ({
                                 style={{ width: `${runner.progress}%` }}
                             />
                             <span className="runner-progress-label">{runner.progress}%</span>
+                        </div>
+                    )}
+
+                    {/* Streak counter */}
+                    {isFlowRunning && runner.streakCount >= 2 && (
+                        <div className="streak-counter" title={`${runner.streakCount} tasks on time in a row!`}>
+                            🔥 {runner.streakCount}
                         </div>
                     )}
                 </div>

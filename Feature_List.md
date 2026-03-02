@@ -171,6 +171,32 @@
 
 ---
 
+## 📌 Scheduled Nodes (Time-Pinned Tasks)
+
+> 📘 Full design reference: [scheduled_nodes_design.md](./scheduled_nodes_design.md)
+
+### Pinned vs Flexible Nodes
+- **Purpose**: Allow task nodes to optionally anchor to a specific wall-clock time (e.g. "10:00 AM") instead of just having a duration
+- **How it works**: Each task node has an optional "Pin to time" toggle in the edit panel. **Pinned nodes** declare a fixed start time; their end time is auto-calculated from `startTime + duration`. **Flexible nodes** (default) retain current behavior — they are purely duration-based and run whenever reached. A flow can mix both types freely.
+
+### Canvas Time Ordering
+- **Purpose**: Visually enforce chronological order for pinned nodes
+- **How it works**: Pinned nodes auto-position left-to-right by scheduled time on the canvas. A 9:00 AM node must be to the left of a 10:00 AM node. Flexible nodes remain freely positioned. Pinned nodes display a 📌 badge with their scheduled time on the node card.
+
+### Chronological Edge Validation
+- **Purpose**: Prevent logically impossible dependencies between pinned nodes
+- **How it works**: Drawing an edge from a later-pinned node (11 AM) to an earlier-pinned node (10 AM) is blocked with a warning toast. Overlap detection flags conflicts when two pinned nodes have overlapping time windows.
+
+### Runner Wait State
+- **Purpose**: Handle time gaps between pinned tasks during flow execution
+- **How it works**: When the flow runner reaches a pinned task before its scheduled time, it enters a "waiting" state showing a countdown ("⏳ Starts in 12 min"). A "Start Now" button lets users override and begin early. If the scheduled time has already passed, the task starts immediately with a "running late" warning.
+
+### Enhanced Schedule Timeline
+- **Purpose**: Turn the schedule sidebar into a true daily planner
+- **How it works**: Pinned tasks show their fixed scheduled time (with 📌 icon) instead of computed times. Flexible tasks fill computed gaps between pinned tasks. Conflicts and gap warnings are visually flagged.
+
+---
+
 ## 🎮 Gamification System *(Planned)*
 
 > 📘 Full design reference: [GAMIFICATION_SYSTEM.md](./GAMIFICATION_SYSTEM.md)

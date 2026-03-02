@@ -8,7 +8,19 @@ const CELEBRATION_MESSAGES = [
     { emoji: '💪', title: 'Beast Mode!', subtitle: 'Nothing can stop you!' },
 ]
 
-const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, onDismiss }) => {
+const formatDuration = (minutes) => {
+    if (minutes < 60) return `${minutes}m`
+    const h = Math.floor(minutes / 60)
+    const m = minutes % 60
+    return m > 0 ? `${h}h ${m}m` : `${h}h`
+}
+
+const formatTime = (date) => {
+    if (!date) return '--:--'
+    return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
+}
+
+const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, schedule, streakCount, onDismiss }) => {
     const [visible, setVisible] = useState(false)
     const [message] = useState(() =>
         CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)]
@@ -16,7 +28,6 @@ const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, onDis
 
     useEffect(() => {
         if (show) {
-            // Small delay for the animation to mount properly
             requestAnimationFrame(() => setVisible(true))
         } else {
             setVisible(false)
@@ -27,9 +38,29 @@ const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, onDis
 
     const displayXP = (totalXP || 0) + (flowBonus?.bonusXP || 0)
 
+    // Derive stats from schedule
+    const stats = schedule && schedule.length > 0 ? (() => {
+        const completed = schedule.filter(i => i.status === 'completed').length
+        const failed = schedule.filter(i => i.status === 'failed').length
+        const skipped = schedule.filter(i => i.status === 'skipped').length
+        const totalPlannedMin = schedule.reduce((sum, i) => sum + i.duration, 0)
+
+        // Calculate actual total from tasks that have both actualStart and actualEnd
+        let totalActualMin = 0
+        schedule.forEach(item => {
+            if (item.actualStart && item.actualEnd) {
+                totalActualMin += Math.round((new Date(item.actualEnd) - new Date(item.actualStart)) / 60000)
+            }
+        })
+
+        const timeDiffMin = totalActualMin - totalPlannedMin
+
+        return { completed, failed, skipped, totalPlannedMin, totalActualMin, timeDiffMin }
+    })() : null
+
     return (
         <div className={`celebration-overlay ${visible ? 'visible' : ''}`} onClick={onDismiss}>
-            <div className="celebration-content" onClick={(e) => e.stopPropagation()}>
+            <div className="celebration-content report-card" onClick={(e) => e.stopPropagation()}>
                 <div className="celebration-confetti">
                     {Array.from({ length: 20 }).map((_, i) => (
                         <div
@@ -56,16 +87,76 @@ const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, onDis
                     </div>
                 )}
 
-                <div className="celebration-stats">
-                    <div className="celebration-stat">
-                        <span className="stat-value">{completedCount}</span>
-                        <span className="stat-label">Tasks Done</span>
+                {/* Stats Grid */}
+                <div className="report-stats-grid">
+                    <div className="report-stat-card completed">
+                        <span className="report-stat-value">{stats ? stats.completed : completedCount}</span>
+                        <span className="report-stat-label">✅ Completed</span>
                     </div>
-                    <div className="celebration-stat">
-                        <span className="stat-value">⭐ {displayXP}</span>
-                        <span className="stat-label">Total XP Earned</span>
+                    {stats && stats.failed > 0 && (
+                        <div className="report-stat-card failed">
+                            <span className="report-stat-value">{stats.failed}</span>
+                            <span className="report-stat-label">❌ Failed</span>
+                        </div>
+                    )}
+                    {stats && stats.skipped > 0 && (
+                        <div className="report-stat-card skipped">
+                            <span className="report-stat-value">{stats.skipped}</span>
+                            <span className="report-stat-label">⏭️ Skipped</span>
+                        </div>
+                    )}
+                    <div className="report-stat-card xp">
+                        <span className="report-stat-value">⭐ {displayXP}</span>
+                        <span className="report-stat-label">XP Earned</span>
                     </div>
+                    {streakCount >= 2 && (
+                        <div className="report-stat-card streak">
+                            <span className="report-stat-value">🔥 {streakCount}</span>
+                            <span className="report-stat-label">Best Streak</span>
+                        </div>
+                    )}
                 </div>
+
+                {/* Time Comparison */}
+                {stats && stats.totalActualMin > 0 && (
+                    <div className="report-time-comparison">
+                        <div className="report-time-row">
+                            <span className="report-time-label">⏱ Planned</span>
+                            <span className="report-time-value">{formatDuration(stats.totalPlannedMin)}</span>
+                        </div>
+                        <div className="report-time-row">
+                            <span className="report-time-label">⏱ Actual</span>
+                            <span className="report-time-value">{formatDuration(stats.totalActualMin)}</span>
+                        </div>
+                        <div className={`report-time-diff ${stats.timeDiffMin > 0 ? 'behind' : 'ahead'}`}>
+                            {stats.timeDiffMin > 0
+                                ? `+${stats.timeDiffMin}m over`
+                                : stats.timeDiffMin < 0
+                                    ? `${Math.abs(stats.timeDiffMin)}m ahead 🚀`
+                                    : 'Right on time ✨'
+                            }
+                        </div>
+                    </div>
+                )}
+
+                {/* Individual Task Results */}
+                {schedule && schedule.length > 0 && (
+                    <div className="report-task-list">
+                        {schedule.map(item => (
+                            <div key={item.nodeId} className={`report-task-item ${item.status}`}>
+                                <span className="report-task-icon">
+                                    {item.status === 'completed' ? '✅' :
+                                        item.status === 'failed' ? '❌' :
+                                            item.status === 'skipped' ? '⏭️' : '⏳'}
+                                </span>
+                                <span className="report-task-name">{item.title}</span>
+                                <span className="report-task-time">
+                                    {formatTime(item.actualStart)} — {formatTime(item.actualEnd)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 <button className="celebration-dismiss-btn" onClick={onDismiss}>
                     Continue 🚀

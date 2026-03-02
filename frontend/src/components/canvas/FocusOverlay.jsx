@@ -27,11 +27,14 @@ const FocusOverlay = ({
     onPause,
     onResume,
     onSkip,
+    onDone,
     onExit,
     // Audio controls
     audioVolume,
     onVolumeChange,
-    isAudioPlaying
+    isAudioPlaying,
+    // Streak
+    streakCount
 }) => {
     const [quote, setQuote] = useState('')
     const [quoteVisible, setQuoteVisible] = useState(true)
@@ -83,6 +86,13 @@ const FocusOverlay = ({
                 <span>{mode.emoji}</span>
                 <span>{mode.label} Mode</span>
             </div>
+
+            {/* Streak badge */}
+            {streakCount >= 2 && (
+                <div className="focus-streak-badge">
+                    🔥 {streakCount} streak
+                </div>
+            )}
 
             {/* Main content */}
             <div className="focus-center">
@@ -185,6 +195,9 @@ const FocusOverlay = ({
                             ▶
                         </button>
                     )}
+                    <button className="focus-btn done" onClick={onDone} title="Done — finished early!">
+                        ✓
+                    </button>
                     <button className="focus-btn skip" onClick={onSkip} title="Skip Task">
                         ⏭
                     </button>

@@ -1455,6 +1455,19 @@
     background: linear-gradient(135deg, #dc2626, #b91c1c);
 }
 
+.toolbar-btn.runner-done {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+    border: 2px solid #047857;
+    box-shadow: 0 3px 0 #065f46;
+    font-weight: 800;
+}
+
+.toolbar-btn.runner-done:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
 .toolbar-btn.runner-skip {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
@@ -2155,6 +2168,19 @@
     border-color: rgba(99, 102, 241, 0.4);
 }
 
+.focus-btn.done {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+    font-size: 1.2rem;
+    font-weight: 900;
+}
+
+.focus-btn.done:hover {
+    background: rgba(16, 185, 129, 0.4);
+    border-color: rgba(16, 185, 129, 0.7);
+    transform: scale(1.1);
+}
+
 .focus-btn.exit {
     border-color: rgba(239, 68, 68, 0.3);
     color: rgba(255, 255, 255, 0.7);
@@ -2784,6 +2810,14 @@
 }
 
 /* Action buttons */
+.reflection-hint {
+    text-align: center;
+    font-size: 0.7rem;
+    color: #64748b;
+    margin: 0 0 0.4rem;
+    letter-spacing: 0.5px;
+}
+
 .reflection-actions {
     display: flex;
     gap: 0.5rem;
@@ -2896,4 +2930,945 @@
     color: #64748b;
     margin: 1rem 0 0;
     font-weight: 500;
+}
+
+/* ========================================
+   STREAK SYSTEM — Phase 4A
+   ======================================== */
+
+/* Toolbar streak counter */
+.streak-counter {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.3rem 0.7rem;
+    background: rgba(249, 115, 22, 0.15);
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    border-radius: 10px;
+    color: #fb923c;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    animation: streakAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes streakAppear {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.2);
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Focus overlay streak badge */
+.focus-streak-badge {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    padding: 0.4rem 0.9rem;
+    background: rgba(249, 115, 22, 0.2);
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    border-radius: 10px;
+    color: #fb923c;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    animation: streakAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 5;
+}
+
+/* Streak toast (milestone / break) */
+.streak-toast {
+    position: absolute;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.6rem 1.4rem;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    z-index: 1100;
+    pointer-events: none;
+    animation: streakToastIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+        streakToastOut 0.4s ease 2.6s forwards;
+}
+
+.streak-toast.milestone {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(249, 115, 22, 0.2));
+    border: 1px solid rgba(251, 191, 36, 0.5);
+    color: #fbbf24;
+    text-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+}
+
+.streak-toast.break {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15));
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes streakToastIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px) scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+@keyframes streakToastOut {
+    from {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+}
+
+/* ========================================
+   LEVEL-UP CELEBRATION — Phase 4B
+   ======================================== */
+
+.levelup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    overflow: hidden;
+}
+
+.levelup-overlay.visible {
+    opacity: 1;
+}
+
+/* Golden flash */
+.levelup-flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(251, 191, 36, 0.4), transparent 70%);
+    animation: levelupFlash 1.2s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes levelupFlash {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+
+    30% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+
+    100% {
+        opacity: 0.15;
+        transform: scale(1);
+    }
+}
+
+/* Confetti */
+.levelup-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.levelup-confetti-piece {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: var(--size, 8px);
+    height: var(--size, 8px);
+    background: var(--color, #fbbf24);
+    border-radius: 2px;
+    animation: levelupConfettiFall 3s ease-in var(--delay, 0s) forwards;
+}
+
+@keyframes levelupConfettiFall {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(var(--x, 0), 100vh) rotate(var(--rot, 360deg));
+        opacity: 0;
+    }
+}
+
+/* Content card */
+.levelup-content {
+    position: relative;
+    text-align: center;
+    z-index: 1;
+    animation: levelupContentIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both;
+}
+
+@keyframes levelupContentIn {
+    from {
+        opacity: 0;
+        transform: scale(0.6) translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* "LEVEL UP!" label */
+.levelup-label {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    margin-bottom: 0.5rem;
+    animation: levelupLabelPulse 2s ease-in-out infinite;
+}
+
+@keyframes levelupLabelPulse {
+
+    0%,
+    100% {
+        text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    }
+
+    50% {
+        text-shadow: 0 0 40px rgba(251, 191, 36, 0.9), 0 0 60px rgba(245, 158, 11, 0.4);
+    }
+}
+
+/* Large level number */
+.levelup-level {
+    font-size: 6rem;
+    font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b, #f97316);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.5));
+    animation: levelupNumberBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s both;
+    margin-bottom: 1rem;
+}
+
+@keyframes levelupNumberBounce {
+    from {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+
+    60% {
+        transform: scale(1.15);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Title reveal */
+.levelup-title-reveal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    animation: levelupTitleIn 0.6s ease 0.9s both;
+}
+
+@keyframes levelupTitleIn {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.levelup-title-emoji {
+    font-size: 1.8rem;
+}
+
+.levelup-title-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+}
+
+/* Dismiss button */
+.levelup-dismiss-btn {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 0.7rem 2rem;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: 12px;
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: levelupTitleIn 0.5s ease 1.2s both;
+}
+
+.levelup-dismiss-btn:hover {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: rgba(251, 191, 36, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(251, 191, 36, 0.3);
+}
+
+/* ========================================
+   SCHEDULE TIMELINE — Phase 5A
+   ======================================== */
+
+.schedule-timeline {
+    position: absolute;
+    top: 70px;
+    right: 1rem;
+    z-index: 100;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.schedule-timeline.collapsed {
+    width: auto;
+}
+
+.schedule-timeline.open {
+    width: 280px;
+}
+
+/* Toggle button */
+.schedule-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    background: rgba(30, 30, 50, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #e2e8f0;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: auto;
+}
+
+.schedule-toggle:hover {
+    background: rgba(30, 30, 50, 0.95);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.schedule-toggle-icon {
+    font-size: 1rem;
+}
+
+.schedule-toggle-count {
+    color: #94a3b8;
+    font-size: 0.75rem;
+}
+
+/* Body */
+.schedule-body {
+    margin-top: 0.5rem;
+    background: rgba(20, 20, 38, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 0.75rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    animation: scheduleSlideIn 0.3s ease;
+}
+
+@keyframes scheduleSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 0.5rem;
+}
+
+.schedule-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.schedule-progress {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+/* Items */
+.schedule-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.schedule-items::-webkit-scrollbar {
+    width: 4px;
+}
+
+.schedule-items::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.schedule-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 10px;
+    border-left: 3px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.2s ease;
+}
+
+/* Status-specific styles */
+.schedule-item.pending {
+    border-left-color: rgba(148, 163, 184, 0.4);
+    opacity: 0.6;
+}
+
+.schedule-item.active {
+    border-left-color: #6366f1;
+    background: rgba(99, 102, 241, 0.1);
+    opacity: 1;
+    animation: scheduleActivePulse 2s ease-in-out infinite;
+}
+
+@keyframes scheduleActivePulse {
+
+    0%,
+    100% {
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    50% {
+        background: rgba(99, 102, 241, 0.18);
+    }
+}
+
+.schedule-item.completed {
+    border-left-color: #22c55e;
+    opacity: 1;
+}
+
+.schedule-item.failed {
+    border-left-color: #ef4444;
+    opacity: 0.9;
+}
+
+.schedule-item.skipped {
+    border-left-color: #94a3b8;
+    opacity: 0.7;
+}
+
+.schedule-item-status {
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.schedule-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-item-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.schedule-item-time {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 0.15rem;
+}
+
+.schedule-item-dash {
+    color: #475569;
+}
+
+.schedule-item-duration {
+    color: #475569;
+    font-size: 0.65rem;
+}
+
+/* Deviation indicator */
+.schedule-item-deviation {
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+.schedule-item-deviation.ahead {
+    color: #22c55e;
+}
+
+.schedule-item-deviation.behind {
+    color: #f97316;
+}
+
+/* ========================================
+   REPORT CARD — Phase 5B
+   ======================================== */
+
+.celebration-content.report-card {
+    max-width: 420px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.celebration-content.report-card::-webkit-scrollbar {
+    width: 4px;
+}
+
+.celebration-content.report-card::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+}
+
+/* Stats Grid */
+.report-stats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.report-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-width: 80px;
+}
+
+.report-stat-value {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.report-stat-label {
+    font-size: 0.65rem;
+    color: #94a3b8;
+    margin-top: 0.15rem;
+    font-weight: 500;
+}
+
+.report-stat-card.completed {
+    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.report-stat-card.completed .report-stat-value {
+    color: #22c55e;
+}
+
+.report-stat-card.failed {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.report-stat-card.failed .report-stat-value {
+    color: #ef4444;
+}
+
+.report-stat-card.streak {
+    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(249, 115, 22, 0.08);
+}
+
+.report-stat-card.xp {
+    border-color: rgba(251, 191, 36, 0.3);
+    background: rgba(251, 191, 36, 0.08);
+}
+
+.report-stat-card.xp .report-stat-value {
+    color: #fbbf24;
+}
+
+/* Time Comparison */
+.report-time-comparison {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+}
+
+.report-time-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+}
+
+.report-time-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.report-time-value {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.report-time-diff {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding-top: 0.35rem;
+    margin-top: 0.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.report-time-diff.ahead {
+    color: #22c55e;
+}
+
+.report-time-diff.behind {
+    color: #f97316;
+}
+
+/* Individual Task Results */
+.report-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.75rem 0;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.report-task-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+.report-task-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.report-task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 0.75rem;
+}
+
+.report-task-item.completed {
+    border-left: 2px solid #22c55e;
+}
+
+.report-task-item.failed {
+    border-left: 2px solid #ef4444;
+}
+
+.report-task-item.skipped {
+    border-left: 2px solid #94a3b8;
+    opacity: 0.7;
+}
+
+.report-task-icon {
+    font-size: 0.7rem;
+    flex-shrink: 0;
+}
+
+.report-task-name {
+    flex: 1;
+    color: #e2e8f0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.report-task-time {
+    color: #64748b;
+    font-size: 0.65rem;
+    white-space: nowrap;
+}
+
+/* ======================================================
+   PHASE 3.5 — Scheduled / Pinned Nodes
+   ====================================================== */
+
+/* ---- Pinned Node Badge (on canvas node) ---- */
+.node-pin-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+    padding: 0.2rem 0.5rem;
+    background: linear-gradient(135deg, #ede9fe 0%, #e0e7ff 100%);
+    border: 1.5px solid #8b5cf6;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #6d28d9;
+    white-space: nowrap;
+}
+
+.canvas-node.node-pinned .node-body {
+    border-top: 3px solid #8b5cf6;
+}
+
+/* ---- Waiting overlay on node during runner wait ---- */
+.node-waiting-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.12);
+    border-radius: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #6d28d9;
+    gap: 0.2rem;
+    z-index: 4;
+    animation: waitPulse 2s ease-in-out infinite;
+}
+
+.node-waiting-label {
+    font-size: 0.65rem;
+    color: #7c3aed;
+    font-weight: 600;
+}
+
+@keyframes waitPulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* ---- Pin Toggle in Edit Panel ---- */
+.pin-schedule-group {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 0.85rem;
+    background: #faf5ff;
+}
+
+.pin-toggle-label {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 0 !important;
+}
+
+.pin-toggle-label input[type="checkbox"] {
+    width: 16px !important;
+    height: 16px;
+    accent-color: #8b5cf6;
+    cursor: pointer;
+}
+
+/* ---- Time Picker ---- */
+.time-picker-row {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.time-picker-sublabel {
+    font-size: 0.65rem !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.2rem !important;
+}
+
+.time-picker-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.time-select {
+    width: auto !important;
+    min-width: 52px;
+    padding: 0.5rem 0.4rem !important;
+    background: #ffffff !important;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    text-align: center;
+    appearance: auto;
+}
+
+.time-select:focus {
+    border-color: #8b5cf6 !important;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+.ampm-select {
+    min-width: 58px;
+}
+
+.time-colon {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--text-secondary);
+}
+
+.scheduled-end-display {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.65rem;
+    background: #f0fdf4;
+    border: 1.5px solid #22c55e;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.end-label {
+    color: #15803d;
+}
+
+.end-time {
+    color: #16a34a;
+    font-weight: 800;
+}
+
+/* ---- Runner Waiting State in Toolbar ---- */
+.runner-waiting-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+    border: 2px solid #8b5cf6;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6d28d9;
+    animation: waitPulse 2s ease-in-out infinite;
+}
+
+.runner-waiting-time {
+    font-weight: 800;
+    color: #7c3aed;
+}
+
+/* ---- Schedule Timeline pinned icon ---- */
+.schedule-item-pin {
+    font-size: 0.7rem;
+    margin-left: 0.25rem;
+    opacity: 0.8;
+}
+
+.schedule-item-gap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    border-left: 2px dashed var(--border-color);
+    margin-left: 1.2rem;
+}
+
+.schedule-item-conflict {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #dc2626;
+    padding: 0.15rem 0.4rem;
+    background: #fef2f2;
+    border-radius: 6px;
+    margin-top: 0.15rem;
 }

@@ -153,6 +153,47 @@
 
 ---
 
+## Phase 3.5 — Scheduled Nodes (Time-Pinned Tasks) 📌
+
+> 📘 Full design reference: [scheduled_nodes_design.md](./scheduled_nodes_design.md)
+> Adds optional real-time anchors to task nodes — "Do this **at** 10:00 AM" vs just "Do this **for** 45 minutes".
+
+### Partition 3.5A — Node Data & Edit Panel
+- Add optional `isPinned` (bool) and `scheduledStart` (HH:mm string) to `node.data`
+- `scheduledEnd` = `scheduledStart + duration` (computed, not stored)
+- NodeEditPanel: new **"📌 Pin to time"** toggle under Duration section
+  - When on: show time picker (hour / minute / AM-PM)
+  - When off: current behavior (duration-only)
+- Default: off — fully backward-compatible
+
+### Partition 3.5B — Canvas Visual Ordering
+- Pinned nodes auto-position left→right by scheduled time
+- 📌 badge + clock time displayed on pinned node cards
+- Flexible (unpinned) nodes remain freely draggable
+- Optional time-ruler lane at canvas top when ≥2 nodes are pinned
+
+### Partition 3.5C — Edge & Dependency Validation
+- Block edges from later-pinned → earlier-pinned nodes (e.g. 11 AM → 10 AM)
+- Show toast warning: *"Can't connect — X (11:00 AM) can't be a prerequisite for Y (10:00 AM)"*
+- Overlap detection: warn when two pinned nodes' time windows intersect
+- Pinned → Flexible and Flexible → Pinned edges are always allowed
+
+### Partition 3.5D — Flow Runner Integration
+- New runner sub-state: **`waiting`** — when a pinned task's time hasn't arrived yet
+  - Shows "⏳ Starts in X min" countdown in toolbar + node
+  - "Start Now" button to override and begin early
+- If scheduled time has passed: start immediately with *"⚠️ Running late"* warning
+- Gaps between pinned tasks: flexible tasks fill gaps; remaining idle time shows break countdown
+- When no pinned nodes exist, runner behaves exactly as today
+
+### Partition 3.5E — Schedule Timeline Enhancement
+- Pinned tasks anchor to their fixed time (with 📌 icon) in the sidebar
+- Flexible tasks fill computed gaps between pinned tasks
+- `buildSchedule()` updated: pinned tasks placed at their times, flexible tasks stacked in gaps
+- Conflict & overflow warnings displayed inline
+
+---
+
 ## Phase 4 — Streaks, Animations & Rewards 🎰
 
 ### Partition 4A — Streak System
@@ -280,7 +321,12 @@
 | ✅ Done | Phase 3A — Post-Task Review & XP Engine | Complete |
 | ✅ Done | Phase 3B — Level System & Dashboard Stats | Complete |
 | ✅ Done | Phase 3C — Task History & Reflection | Complete |
-| 🔴 Now | Phase 4A — Streak System | Next up |
+| 🔴 Now | Phase 3.5A — Scheduled Nodes: Node Data & Edit Panel | **Next up** |
+| 🔴 Now | Phase 3.5B — Scheduled Nodes: Canvas Visual Ordering | After 3.5A |
+| 🔴 Now | Phase 3.5C — Scheduled Nodes: Edge Validation | After 3.5B |
+| 🔴 Now | Phase 3.5D — Scheduled Nodes: Flow Runner Integration | After 3.5C |
+| 🔴 Now | Phase 3.5E — Scheduled Nodes: Schedule Timeline | After 3.5D |
+| 🟡 Next | Phase 4A — Streak System | After Scheduled Nodes |
 | 🟡 Next | Phase 4B — Level-Up & XP Animations | After 4A |
 | 🟢 Later | Phase 4C — Reward Roulette | Optional polish |
 | 🟢 Later | Phase 5 — Schedule & Summary | Not started |

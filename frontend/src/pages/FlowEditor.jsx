@@ -12,6 +12,8 @@ import CompletionCelebration from '../components/canvas/CompletionCelebration'
 import PostTaskReview from '../components/canvas/PostTaskReview'
 import ReflectionCard from '../components/canvas/ReflectionCard'
 import FocusOverlay from '../components/canvas/FocusOverlay'
+import LevelUpCelebration from '../components/canvas/LevelUpCelebration'
+import ScheduleTimeline from '../components/canvas/ScheduleTimeline'
 import useFlowRunner from '../hooks/useFlowRunner'
 import useAmbientAudio from '../hooks/useAmbientAudio'
 import '../styles/canvas.css'
@@ -33,6 +35,7 @@ const FlowEditor = () => {
     const [sessionEarnedXP, setSessionEarnedXP] = useState(0)
     const [flowBonus, setFlowBonus] = useState(null)
     const [reflectionData, setReflectionData] = useState(null)
+    const [levelUpData, setLevelUpData] = useState(null)
 
     const [selectedNodeId, setSelectedNodeId] = useState(null)
     const [selectedEdgeId, setSelectedEdgeId] = useState(null)
@@ -44,6 +47,7 @@ const FlowEditor = () => {
 
     // ---- Focus Mode & Audio ----
     const [isFocusActive, setIsFocusActive] = useState(false)
+    const [showSchedule, setShowSchedule] = useState(false)
     const ambientAudio = useAmbientAudio()
 
     // Start/switch audio when focus is active and active node changes
@@ -403,6 +407,17 @@ const FlowEditor = () => {
                 }, 2000)
             }
         }
+
+        // Trigger level-up celebration (delay so review card dismisses first)
+        if (xpResult?.levelUp) {
+            setTimeout(() => {
+                setLevelUpData({
+                    newLevel: xpResult.newLevel,
+                    title: xpResult.title
+                })
+            }, 400)
+        }
+
         runner.resolveReview(outcome, xpResult)
     }
 
@@ -464,8 +479,9 @@ const FlowEditor = () => {
         if (runner.activeNodeId) {
             setSelectedNodeId(runner.activeNodeId)
         }
-        setReflectionData(null)
-        runner.confirmTaskStart()
+        // Do NOT confirm start — just open the panel.
+        // The ReflectionCard will temporarily hide because of the !selectedNodeId check below.
+        // When panel closes, selectedNodeId becomes null, card reappears.
     }, [runner])
 
 
@@ -527,8 +543,8 @@ const FlowEditor = () => {
                     }}
                 />
 
-                {/* Node Edit Panel — only when idle */}
-                {selectedNode && runner.isIdle && (
+                {/* Node Edit Panel — allow editing when idle OR when waiting for reflection */}
+                {selectedNode && (runner.isIdle || runner.waitingForReflection) && (
                     <NodeEditPanel
                         node={selectedNode}
                         edges={edges}
@@ -543,13 +559,13 @@ const FlowEditor = () => {
                 {/* XP Popups */}
                 <XPPopup popups={xpPopups} onRemove={removeXpPopup} />
 
-                {/* Pre-Task Reflection Card */}
-                {reflectionData && runner.waitingForReflection && (
+                {/* Pre-Task Reflection Card — hide if editing a node */}
+                {reflectionData && runner.waitingForReflection && !selectedNodeId && (
                     <ReflectionCard
                         history={reflectionData.history}
                         bestTime={reflectionData.bestTime}
                         suggestedDuration={reflectionData.suggestedDuration}
-                        taskTitle={reflectionData.taskTitle}
+                        taskTitle={runner.activeNode?.data?.title || reflectionData.taskTitle}
                         onStart={handleReflectionStart}
                         onEdit={handleReflectionEdit}
                     />
@@ -578,6 +594,7 @@ const FlowEditor = () => {
                         streakCount={runner.streakCount}
                         usedFocusOverlay={isFocusActive}
                         sessionMode={runner.activeNode?.data?.sessionMode || 'focus'}
+                        earlyComplete={runner.reviewPending?.earlyComplete || false}
                         onComplete={handleReviewComplete}
                     />
                 )}
@@ -594,11 +611,21 @@ const FlowEditor = () => {
                     completedCount={runner.completedNodeIds.length}
                     totalXP={sessionEarnedXP}
                     flowBonus={flowBonus}
+                    schedule={runner.schedule}
+                    streakCount={runner.streakCount}
                     onDismiss={runner.dismissCelebration}
                 />
 
+                {/* Level-Up Celebration */}
+                <LevelUpCelebration
+                    show={!!levelUpData}
+                    newLevel={levelUpData?.newLevel}
+                    title={levelUpData?.title}
+                    onDismiss={() => setLevelUpData(null)}
+                />
+
                 {/* Focus Overlay */}
-                {isFocusActive && runner.activeNode && (
+                {isFocusActive && runner.activeNode && !runner.reviewPending && (
                     <FocusOverlay
                         activeNode={runner.activeNode}
                         timeRemaining={runner.timeRemaining}
@@ -608,10 +635,28 @@ const FlowEditor = () => {
                         onPause={runner.pauseFlow}
                         onResume={runner.resumeFlow}
                         onSkip={runner.skipTask}
+                        onDone={runner.completeTaskEarly}
                         onExit={() => setIsFocusActive(false)}
                         audioVolume={ambientAudio.volume}
                         onVolumeChange={ambientAudio.setVolume}
                         isAudioPlaying={ambientAudio.isPlaying}
+                        streakCount={runner.streakCount}
+                    />
+                )}
+
+                {/* Streak Toast */}
+                {runner.streakMessage && (
+                    <div className={`streak-toast ${runner.streakMessage.type}`}>
+                        {runner.streakMessage.text}
+                    </div>
+                )}
+
+                {/* Schedule Timeline Sidebar */}
+                {(runner.isRunning || runner.isPaused || runner.isCompleted) && runner.schedule.length > 0 && (
+                    <ScheduleTimeline
+                        schedule={runner.schedule}
+                        isOpen={showSchedule}
+                        onToggle={() => setShowSchedule(prev => !prev)}
                     />
                 )}
             </div>
