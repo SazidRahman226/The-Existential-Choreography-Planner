@@ -12,6 +12,7 @@ import {
     shouldFullRecharge,
     xpForLevel
 } from '../utils/gamification.js';
+import { checkAchievements } from '../utils/achievements.js';
 
 const taskService = new TaskService();
 
@@ -189,6 +190,78 @@ export class TaskController {
             const newTitle = getTitleForLevel(user.level);
             const levelUp = user.level > oldLevel;
 
+            // 6.5. Update stat counters for achievements
+            if (!user.stats) user.stats = {};
+            const isSuccess = outcome === 'completed';
+
+            if (isSuccess) {
+                user.stats.tasksCompleted = (user.stats.tasksCompleted || 0) + 1;
+
+                // Early finish (≥30% time remaining)
+                if (timeRemainingPercent >= 30) {
+                    user.stats.earlyFinishes = (user.stats.earlyFinishes || 0) + 1;
+                }
+
+                // Focus overlay
+                if (usedFocusOverlay) {
+                    user.stats.focusTasks = (user.stats.focusTasks || 0) + 1;
+                }
+
+                // Zen mode
+                if (sessionMode === 'zen') {
+                    user.stats.zenTasks = (user.stats.zenTasks || 0) + 1;
+                }
+
+                // Personal record
+                if (isPersonalRecord) {
+                    user.stats.personalRecords = (user.stats.personalRecords || 0) + 1;
+                }
+
+                // Best streak
+                if (streakCount > (user.stats.bestStreak || 0)) {
+                    user.stats.bestStreak = streakCount;
+                }
+
+                // Comeback: on-time after 3+ consecutive fails
+                if ((user.stats.consecutiveFails || 0) >= 3) {
+                    user.stats.comebacks = (user.stats.comebacks || 0) + 1;
+                }
+                user.stats.consecutiveFails = 0;
+
+                // Time-of-day badges
+                const hour = new Date().getHours();
+                if (hour >= 23 || hour < 4) {
+                    user.stats.nightTasks = (user.stats.nightTasks || 0) + 1;
+                }
+                if (hour >= 4 && hour < 7) {
+                    user.stats.earlyTasks = (user.stats.earlyTasks || 0) + 1;
+                }
+            } else if (outcome === 'failed') {
+                user.stats.consecutiveFails = (user.stats.consecutiveFails || 0) + 1;
+            }
+
+            // 6.6 Check for newly unlocked achievements
+            const newBadges = checkAchievements(user);
+            let badgeBonusXP = 0;
+            const unlockedBadges = [];
+
+            for (const badge of newBadges) {
+                user.badges.push({ key: badge.key, unlockedAt: new Date() });
+                badgeBonusXP += badge.xpBonus;
+                unlockedBadges.push({
+                    key: badge.key,
+                    name: badge.name,
+                    emoji: badge.emoji,
+                    xpBonus: badge.xpBonus
+                });
+            }
+
+            // Add badge bonus XP
+            if (badgeBonusXP > 0) {
+                user.points += badgeBonusXP;
+                user.level = calculateLevel(user.points);
+            }
+
             // 7. Update last session date
             user.lastSessionDate = new Date();
 
@@ -242,7 +315,9 @@ export class TaskController {
                     percent: Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100)
                 },
                 energyWarning: getEnergyWarning(user.energy),
-                isPersonalRecord
+                isPersonalRecord,
+                unlockedBadges,
+                badgeBonusXP
             });
         } catch (error) {
             console.error('Error completing task:', error);

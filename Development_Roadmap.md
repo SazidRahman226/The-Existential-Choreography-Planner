@@ -321,16 +321,12 @@
 | ✅ Done | Phase 3A — Post-Task Review & XP Engine | Complete |
 | ✅ Done | Phase 3B — Level System & Dashboard Stats | Complete |
 | ✅ Done | Phase 3C — Task History & Reflection | Complete |
-| 🔴 Now | Phase 3.5A — Scheduled Nodes: Node Data & Edit Panel | **Next up** |
-| 🔴 Now | Phase 3.5B — Scheduled Nodes: Canvas Visual Ordering | After 3.5A |
-| 🔴 Now | Phase 3.5C — Scheduled Nodes: Edge Validation | After 3.5B |
-| 🔴 Now | Phase 3.5D — Scheduled Nodes: Flow Runner Integration | After 3.5C |
-| 🔴 Now | Phase 3.5E — Scheduled Nodes: Schedule Timeline | After 3.5D |
-| 🟡 Next | Phase 4A — Streak System | After Scheduled Nodes |
-| 🟡 Next | Phase 4B — Level-Up & XP Animations | After 4A |
-| 🟢 Later | Phase 4C — Reward Roulette | Optional polish |
-| 🟢 Later | Phase 5 — Schedule & Summary | Not started |
-| ⚪ Future | Phase 6 — Polish & Social | Not started |
+| ✅ Done | Phase 3.5 — Scheduled Nodes (Time-Pinned Tasks) | Complete (Partitions A–E) |
+| ✅ Done | Phase 4A — Streak System | Complete |
+| ✅ Done | Phase 4B — Level-Up & XP Animations | Complete |
+| ✅ Done | Phase 4C — Reward Roulette | Complete |
+| ✅ Done | Phase 5 — Schedule & Summary | Complete |
+| � Now | Phase 6 — Polish & Social | **Next up** |
 | ⚪ Future | Phase 7A — SessionMode Model & API | Not started |
 | ⚪ Future | Phase 7B — Admin Mode Builder | Not started |
 | ⚪ Future | Phase 7C — User Preferences Tab | Not started |

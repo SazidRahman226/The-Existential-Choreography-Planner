@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import taskService from '../../services/task.service'
+import RewardRoulette from './RewardRoulette'
 
 const FAILURE_REASONS = [
     { key: 'distracted', label: '📱 Got distracted' },
@@ -30,6 +31,7 @@ const PostTaskReview = ({
     const [xpResult, setXpResult] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
+    const [rouletteClaimed, setRouletteClaimed] = useState(false)
 
     // Auto-submit on mount when earlyComplete is true
     useEffect(() => {
@@ -284,13 +286,56 @@ const PostTaskReview = ({
                             </div>
                         )}
 
+                        {/* Badge Unlocks */}
+                        {xpResult.unlockedBadges && xpResult.unlockedBadges.length > 0 && (
+                            <div className="badge-unlock-list">
+                                {xpResult.unlockedBadges.map(badge => (
+                                    <div key={badge.key} className="badge-unlock-banner">
+                                        <span className="badge-unlock-icon">🏅</span>
+                                        <span className="badge-unlock-text">
+                                            {badge.emoji} <strong>{badge.name}</strong> — +{badge.xpBonus} XP
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         {error && (
                             <div className="review-error">{error}</div>
                         )}
 
-                        <button className="post-review-continue" onClick={handleContinue}>
-                            Continue →
-                        </button>
+                        {/* Reward Roulette — only for early completions */}
+                        {earlyComplete && !rouletteClaimed && (
+                            <RewardRoulette
+                                onClaim={(prize) => {
+                                    setRouletteClaimed(true)
+                                    // Add bonus XP from the prize to the result
+                                    if (prize.id === 'xp25' || prize.id === 'xp50' || prize.id === 'xp10') {
+                                        const bonusXP = prize.id === 'xp50' ? 50 : prize.id === 'xp25' ? 25 : 10
+                                        setXpResult(prev => ({
+                                            ...prev,
+                                            earnedXP: (prev?.earnedXP || 0) + bonusXP,
+                                            roulettePrize: prize
+                                        }))
+                                    } else {
+                                        setXpResult(prev => ({ ...prev, roulettePrize: prize }))
+                                    }
+                                }}
+                            />
+                        )}
+
+                        {/* Show claimed prize if roulette was used */}
+                        {rouletteClaimed && xpResult?.roulettePrize && (
+                            <div className="roulette-claimed-badge">
+                                {xpResult.roulettePrize.emoji} {xpResult.roulettePrize.label} claimed!
+                            </div>
+                        )}
+
+                        {(!earlyComplete || rouletteClaimed) && (
+                            <button className="post-review-continue" onClick={handleContinue}>
+                                Continue →
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

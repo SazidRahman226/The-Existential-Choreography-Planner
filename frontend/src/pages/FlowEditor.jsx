@@ -539,7 +539,8 @@ const FlowEditor = () => {
                     containerRef={canvasRef}
                     runnerState={runner.isIdle ? null : {
                         activeNodeId: runner.activeNodeId,
-                        timeRemaining: runner.timeRemaining
+                        timeRemaining: runner.timeRemaining,
+                        isWaiting: runner.isWaiting
                     }}
                 />
 
@@ -613,6 +614,14 @@ const FlowEditor = () => {
                     flowBonus={flowBonus}
                     schedule={runner.schedule}
                     streakCount={runner.streakCount}
+                    trend={runner.showCelebration && runner.schedule.length > 0 ? (() => {
+                        const done = runner.schedule.filter(i => i.actualStart && i.actualEnd)
+                        if (done.length === 0) return null
+                        const totalPlanned = runner.schedule.reduce((s, i) => s + i.duration, 0)
+                        const totalActual = done.reduce((s, i) => s + Math.round((new Date(i.actualEnd) - new Date(i.actualStart)) / 60000), 0)
+                        const pct = totalPlanned > 0 ? Math.round(((totalPlanned - totalActual) / totalPlanned) * 100) : 0
+                        return { percent: pct }
+                    })() : null}
                     onDismiss={runner.dismissCelebration}
                 />
 

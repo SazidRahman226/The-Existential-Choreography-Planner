@@ -224,3 +224,31 @@ Timer ends → Post-Task Review popup → User picks outcome
 | **Phase 4A** | Streak system | Streak counter, bonus multipliers, streak UI |
 | **Phase 4B** | Level-up & XP animations | Celebration effects, floating XP, sound FX |
 | **Phase 4C** | Reward roulette (optional) | Spin wheel on early completion |
+| **Phase 8** | Badges & Achievements | 23 achievements, stat counters, showcase UI |
+
+---
+
+## 9. Badges & Achievements
+
+Achievements are predefined goals evaluated automatically at task/flow completion.
+Each badge awards a one-time XP bonus when unlocked. Badges are permanent.
+
+### Categories
+
+| Category | Emoji | Examples |
+|----------|-------|----------|
+| Milestones | 🏆 | First Steps, Century, XP Hoarder |
+| Streak & Consistency | 🔥 | Double Kill, Daily Devotee |
+| Performance | ⚡ | Speed Demon, Perfect Run, Focus Monk |
+| Flow Mastery | 🎯 | Flow Architect, Zen Master |
+| Special | 🌟 | Level 10/25/50, Comeback Kid |
+
+### Data: User.stats counters
+
+```
+tasksCompleted, personalRecords, focusTasks, earlyFinishes,
+zenTasks, rouletteWins, bestStreak, flowsCompleted, flowsCreated,
+consecutiveDays, perfectRuns, nightTasks, earlyTasks, comebacks
+```
+
+Full definitions: `backend/utils/achievements.js` (23 achievements).

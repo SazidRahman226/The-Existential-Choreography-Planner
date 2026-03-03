@@ -2,8 +2,8 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
-import { Badge } from '../models/badge.js';
 import { calculateLevel, getTitleForLevel, xpForLevel, getEnergyWarning } from '../utils/gamification.js';
+import { ACHIEVEMENTS, CATEGORIES, getProgress } from '../utils/achievements.js';
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
@@ -145,7 +145,7 @@ export const logoutUser = async (req, res) => {
 // Get current user profile
 export const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate('badges');
+        const user = await User.findById(req.user._id);
         res.json({ user });
     } catch (error) {
         console.error('Get Profile Error:', error);
@@ -187,7 +187,7 @@ export const updateProfile = async (req, res) => {
                 ...(avatar !== undefined && !req.file && { avatar }) // Fallback if avatar is sent as string (e.g. clear)
             },
             { new: true, runValidators: true }
-        ).populate('badges');
+        );
 
         res.json({
             message: 'Profile updated successfully',
@@ -360,6 +360,47 @@ export const getStats = async (req, res) => {
     } catch (error) {
         console.error('Get Stats Error:', error);
         res.status(500).json({ message: 'Error fetching stats' });
+    }
+};
+
+// Get achievements with unlock status and progress
+export const getAchievements = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const earnedKeys = new Set((user.badges || []).map(b => b.key));
+        const badgeMap = {};
+        for (const b of (user.badges || [])) {
+            badgeMap[b.key] = b.unlockedAt;
+        }
+
+        const achievements = ACHIEVEMENTS.map(a => {
+            const unlocked = earnedKeys.has(a.key);
+            const progress = getProgress(a, user.stats || {}, user);
+
+            return {
+                key: a.key,
+                name: a.name,
+                emoji: a.emoji,
+                description: a.description,
+                category: a.category,
+                xpBonus: a.xpBonus,
+                unlocked,
+                unlockedAt: unlocked ? badgeMap[a.key] : null,
+                progress
+            };
+        });
+
+        res.json({
+            achievements,
+            categories: CATEGORIES,
+            totalUnlocked: achievements.filter(a => a.unlocked).length,
+            totalAchievements: achievements.length
+        });
+    } catch (error) {
+        console.error('Get Achievements Error:', error);
+        res.status(500).json({ message: 'Error fetching achievements' });
     }
 };
 

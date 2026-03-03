@@ -20,7 +20,7 @@ const formatTime = (date) => {
     return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })
 }
 
-const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, schedule, streakCount, onDismiss }) => {
+const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, schedule, streakCount, trend, onDismiss }) => {
     const [visible, setVisible] = useState(false)
     const [message] = useState(() =>
         CELEBRATION_MESSAGES[Math.floor(Math.random() * CELEBRATION_MESSAGES.length)]
@@ -136,6 +136,18 @@ const CompletionCelebration = ({ show, completedCount, totalXP, flowBonus, sched
                                     : 'Right on time ✨'
                             }
                         </div>
+                    </div>
+                )}
+
+                {/* Performance Trend */}
+                {trend && (
+                    <div className="report-trend">
+                        {trend.percent > 0
+                            ? `📈 ${trend.percent}% faster than estimated — nice pacing!`
+                            : trend.percent < 0
+                                ? `📉 ${Math.abs(trend.percent)}% slower than estimated — room to improve!`
+                                : '✨ Right on schedule — perfect!'
+                        }
                     </div>
                 )}
 
