@@ -24,6 +24,28 @@ const flowService = {
     completeFlow: async (id, data) => {
         const response = await api.patch(`/flows/${id}/complete-flow`, data);
         return response.data;
+    },
+    // --- Public Gallery ---
+    getPublicFlows: async (params = {}) => {
+        const response = await api.get('/flows/public', { params });
+        return response.data;
+    },
+    cloneFlow: async (id) => {
+        const response = await api.post(`/flows/${id}/clone`);
+        return response.data;
+    },
+    togglePublic: async (id, tags) => {
+        const response = await api.patch(`/flows/${id}/toggle-public`, { tags });
+        return response.data;
+    },
+    // --- Admin Review ---
+    getPendingFlows: async () => {
+        const response = await api.get('/flows/pending');
+        return response.data;
+    },
+    reviewFlow: async (id, action, note = '') => {
+        const response = await api.patch(`/flows/${id}/review`, { action, note });
+        return response.data;
     }
 };
 

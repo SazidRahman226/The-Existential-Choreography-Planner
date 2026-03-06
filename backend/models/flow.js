@@ -27,6 +27,28 @@ const FlowSchema = new mongoose.Schema({
     isPublic: {
         type: Boolean,
         default: false
+    },
+    publicStatus: {
+        type: String,
+        enum: ['private', 'pending', 'approved', 'rejected'],
+        default: 'private'
+    },
+    reviewNote: {
+        type: String,
+        default: ''
+    },
+    tags: {
+        type: [String],
+        default: []
+    },
+    cloneCount: {
+        type: Number,
+        default: 0
+    },
+    clonedFrom: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Flow',
+        default: null
     }
 }, {
     timestamps: true

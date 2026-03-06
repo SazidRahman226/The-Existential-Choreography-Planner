@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../providers'
 import flowService from '../services/flow.service'
 import taskService from '../services/task.service'
 import SESSION_MODES from '../config/sessionModes'
@@ -14,6 +15,7 @@ import ReflectionCard from '../components/canvas/ReflectionCard'
 import FocusOverlay from '../components/canvas/FocusOverlay'
 import LevelUpCelebration from '../components/canvas/LevelUpCelebration'
 import ScheduleTimeline from '../components/canvas/ScheduleTimeline'
+import ShareFlowModal from '../components/canvas/ShareFlowModal'
 import useFlowRunner from '../hooks/useFlowRunner'
 import useAmbientAudio from '../hooks/useAmbientAudio'
 import '../styles/canvas.css'
@@ -36,6 +38,9 @@ const FlowEditor = () => {
     const [flowBonus, setFlowBonus] = useState(null)
     const [reflectionData, setReflectionData] = useState(null)
     const [levelUpData, setLevelUpData] = useState(null)
+    const [publicStatus, setPublicStatus] = useState('private')
+    const [showShareModal, setShowShareModal] = useState(false)
+    const { user } = useAuth()
 
     const [selectedNodeId, setSelectedNodeId] = useState(null)
     const [selectedEdgeId, setSelectedEdgeId] = useState(null)
@@ -75,12 +80,30 @@ const FlowEditor = () => {
         setIsFocusActive(prev => !prev)
     }, [])
 
+    // ---- Share toggle ----
+    const handleShareClick = useCallback(() => {
+        setShowShareModal(true)
+    }, [])
+
+    const handleConfirmShare = useCallback(async () => {
+        if (!id) return
+        try {
+            const result = await flowService.togglePublic(id)
+            setPublicStatus(result.publicStatus)
+            setShowShareModal(false)
+        } catch (err) {
+            console.error('Toggle public failed:', err)
+            alert('Failed to update share status')
+        }
+    }, [id])
+
     // ---- Load Flow ----
     useEffect(() => {
         const fetchFlow = async () => {
             try {
                 const data = await flowService.getById(id)
                 setFlow(data)
+                setPublicStatus(data.publicStatus || (data.isPublic ? 'approved' : 'private'))
                 const flowData = data.flowData || { nodes: [], edges: [] }
                 let loadedNodes = flowData.nodes || []
                 let loadedEdges = flowData.edges || []
@@ -506,6 +529,8 @@ const FlowEditor = () => {
         )
     }
 
+    const isViewer = flow && user && flow.userId !== user._id
+
     return (
         <div className="flow-editor-page">
             <CanvasToolbar
@@ -521,6 +546,10 @@ const FlowEditor = () => {
                 runner={runner}
                 onToggleFocus={toggleFocus}
                 isFocusActive={isFocusActive}
+                isPublic={publicStatus === 'approved'}
+                publicStatus={publicStatus}
+                onShareClick={handleShareClick}
+                isViewer={isViewer}
             />
 
             <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -666,6 +695,15 @@ const FlowEditor = () => {
                         schedule={runner.schedule}
                         isOpen={showSchedule}
                         onToggle={() => setShowSchedule(prev => !prev)}
+                    />
+                )}
+
+                {/* Share Flow Modal */}
+                {showShareModal && (
+                    <ShareFlowModal
+                        flow={{ ...flow, publicStatus }}
+                        onClose={() => setShowShareModal(false)}
+                        onConfirm={handleConfirmShare}
                     />
                 )}
             </div>

@@ -353,16 +353,35 @@ const FlowCanvas = ({
                     </defs>
 
                     {/* Existing edges */}
-                    {edges.map(edge => (
-                        <CanvasEdge
-                            key={edge.id}
-                            edge={edge}
-                            sourcePos={getHandlePos(edge.source, 'output')}
-                            targetPos={getHandlePos(edge.target, 'input')}
-                            isSelected={selectedEdgeId === edge.id}
-                            onSelect={onEdgeSelect}
-                        />
-                    ))}
+                    {edges.map(edge => {
+                        // Compute edge flow status for visual effects
+                        let flowStatus = null
+                        if (runnerState?.status === 'running' || runnerState?.status === 'paused') {
+                            const activeId = runnerState.activeNodeId
+                            const sourceNode = nodes.find(n => n.id === edge.source)
+                            const targetNode = nodes.find(n => n.id === edge.target)
+                            const sourceCompleted = sourceNode?.data?.status === 'completed'
+                            const targetCompleted = targetNode?.data?.status === 'completed'
+
+                            if (edge.source === activeId || edge.target === activeId) {
+                                flowStatus = 'active'
+                            } else if (sourceCompleted && targetCompleted) {
+                                flowStatus = 'completed'
+                            }
+                        }
+
+                        return (
+                            <CanvasEdge
+                                key={edge.id}
+                                edge={edge}
+                                sourcePos={getHandlePos(edge.source, 'output')}
+                                targetPos={getHandlePos(edge.target, 'input')}
+                                isSelected={selectedEdgeId === edge.id}
+                                onSelect={onEdgeSelect}
+                                flowStatus={flowStatus}
+                            />
+                        )
+                    })}
 
                     {/* Temp connection line while drawing */}
                     {connecting && (

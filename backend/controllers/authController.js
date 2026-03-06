@@ -405,6 +405,50 @@ export const getAchievements = async (req, res) => {
 };
 
 
+// Get leaderboard
+export const getLeaderboard = async (req, res) => {
+    try {
+        const { period = 'alltime' } = req.query;
+
+        let filter = { isActive: true };
+
+        if (period === 'weekly') {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            filter.lastSessionDate = { $gte: sevenDaysAgo };
+        }
+
+        const users = await User.find(filter)
+            .sort({ points: -1 })
+            .limit(50)
+            .select('fullName username avatar level points badges stats');
+
+        const leaderboard = users.map((u, index) => {
+            const title = getTitleForLevel(u.level);
+            return {
+                rank: index + 1,
+                _id: u._id,
+                fullName: u.fullName,
+                username: u.username,
+                avatar: u.avatar,
+                level: u.level,
+                title: title.label,
+                titleEmoji: title.emoji,
+                totalXP: u.points,
+                badgeCount: u.badges?.length || 0,
+                tasksCompleted: u.stats?.tasksCompleted || 0,
+                bestStreak: u.stats?.bestStreak || 0
+            };
+        });
+
+        res.json(leaderboard);
+    } catch (error) {
+        console.error('Leaderboard Error:', error);
+        res.status(500).json({ message: 'Error fetching leaderboard' });
+    }
+};
+
+
 // --- Admin Controllers ---
 
 // Get all users

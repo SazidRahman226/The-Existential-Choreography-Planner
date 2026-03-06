@@ -257,11 +257,43 @@
     z-index: 2;
     user-select: none;
     cursor: grab;
-    transition: box-shadow 0.2s, transform 0.1s;
+    transition: box-shadow 0.2s, transform 0.1s, filter 0.3s;
 }
 
 .canvas-node:active {
     cursor: grabbing;
+}
+
+
+/* ---- Edge Flow Particles (active flow run) ---- */
+.canvas-edges-svg .edge-path.edge-flow-active {
+    stroke: #3b82f6;
+    stroke-width: 3;
+    stroke-dasharray: 8 12;
+    animation: edgeFlowParticles 0.8s linear infinite;
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.4));
+}
+
+.canvas-edges-svg .edge-path.edge-flow-completed {
+    stroke: #22c55e;
+    stroke-width: 2.5;
+    stroke-dasharray: none;
+    filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.3));
+}
+
+.canvas-edges-svg .edge-arrow.edge-arrow-active {
+    fill: #3b82f6;
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.5));
+}
+
+.canvas-edges-svg .edge-arrow.edge-arrow-completed {
+    fill: #22c55e;
+}
+
+@keyframes edgeFlowParticles {
+    to {
+        stroke-dashoffset: -20;
+    }
 }
 
 .canvas-node .node-body {
@@ -286,6 +318,82 @@
     border-color: var(--secondary-color);
     box-shadow: 0 6px 0 var(--secondary-shadow), 0 0 0 3px rgba(28, 176, 246, 0.15);
     transform: translateY(-2px);
+}
+
+/* ---- Node Glow Effects ---- */
+/* These MUST come after hover/selected rules to win in the cascade */
+
+/* Completed: green glow + subtle shimmer */
+.canvas-node.node-completed .node-body {
+    border-color: #22c55e !important;
+    box-shadow: 0 4px 0 #16a34a,
+        0 0 14px rgba(34, 197, 94, 0.4),
+        0 0 28px rgba(34, 197, 94, 0.15) !important;
+    background: linear-gradient(135deg, #ffffff, #f0fdf4);
+}
+
+.canvas-node.node-completed::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, transparent 30%, rgba(34, 197, 94, 0.2) 50%, transparent 70%);
+    background-size: 200% 200%;
+    animation: nodeShimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Active running: pulsing blue glow */
+.canvas-node.node-active-running .node-body {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 4px 0 #2563eb,
+        0 0 20px rgba(59, 130, 246, 0.5),
+        0 0 40px rgba(59, 130, 246, 0.2) !important;
+    animation: nodeActivePulse 2s ease-in-out infinite;
+    background: linear-gradient(135deg, #ffffff, #eff6ff);
+}
+
+/* Failed: red glow */
+.canvas-node.status-failed .node-body {
+    border-color: #ef4444 !important;
+    box-shadow: 0 4px 0 #dc2626,
+        0 0 14px rgba(239, 68, 68, 0.4),
+        0 0 28px rgba(239, 68, 68, 0.15) !important;
+    background: linear-gradient(135deg, #ffffff, #fef2f2);
+}
+
+/* In-progress: subtle amber glow */
+.canvas-node.status-in-progress .node-body {
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 0 #d97706,
+        0 0 10px rgba(245, 158, 11, 0.3) !important;
+}
+
+@keyframes nodeActivePulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 0 #2563eb,
+            0 0 20px rgba(59, 130, 246, 0.5),
+            0 0 40px rgba(59, 130, 246, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 4px 0 #2563eb,
+            0 0 30px rgba(59, 130, 246, 0.7),
+            0 0 60px rgba(59, 130, 246, 0.3);
+    }
+}
+
+@keyframes nodeShimmer {
+    0% {
+        background-position: -200% -200%;
+    }
+
+    100% {
+        background-position: 200% 200%;
+    }
 }
 
 /* Node Shape Variants */
@@ -4160,4 +4268,98 @@
 .badge-unlock-text {
     color: #92400e;
     font-weight: 600;
+}
+
+/* Share Toggle Button */
+.toolbar-btn.share-toggle {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.toolbar-btn.share-toggle.shared {
+    background: #22c55e;
+    color: white;
+    border-color: #16a34a;
+}
+
+.toolbar-btn.share-toggle:not(.shared) {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.toolbar-btn.share-toggle.pending {
+    background: #fbbf24;
+    color: #78350f;
+    border-color: #f59e0b;
+}
+
+.toolbar-btn.share-toggle.rejected {
+    background: #fecaca;
+    color: #991b1b;
+    border-color: #ef4444;
+}
+
+/* Share Flow Modal */
+.share-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    animation: popup 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.share-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.share-modal-header h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--text-primary);
+}
+
+.share-modal-desc {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+.share-modal-warning {
+    margin: 1rem 0 1.5rem 0;
+    padding: 0.75rem 1rem;
+    background: #fffbeb;
+    color: #b45309;
+    border-left: 4px solid #f59e0b;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.share-modal-rejection {
+    margin: 0 0 1.5rem 0;
+    padding: 1rem;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+}
+
+.share-modal-rejection p {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.share-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
 }

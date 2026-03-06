@@ -11,8 +11,10 @@ import PublicRoute from './routes/PublicRoute'
 import { Navbar } from './components'
 import { AuthProvider, PopupProvider } from './providers'
 
-import Users from './pages/Users'
+import AdminDashboard from './pages/AdminDashboard'
 import FlowEditor from './pages/FlowEditor'
+import FlowGallery from './pages/FlowGallery'
+import Leaderboard from './pages/Leaderboard'
 
 function App() {
     return (
@@ -38,8 +40,10 @@ function App() {
                         <Route element={<PrivateRoute />}>
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/account" element={<Account />} />
-                            <Route path="/users" element={<Users />} />
+                            <Route path="/admin" element={<AdminDashboard />} />
                             <Route path="/flow/:id" element={<FlowEditor />} />
+                            <Route path="/explore" element={<FlowGallery />} />
+                            <Route path="/leaderboard" element={<Leaderboard />} />
                         </Route>
                     </Routes>
                 </Router>

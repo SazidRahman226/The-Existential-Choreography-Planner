@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, refresh, logoutUser, getProfile, updateProfile, checkUsername, forgotPasswordController, resetPasswordController, getAllUsers, updateUserRole, updateUserStatus, getStats, getAchievements } from '../controllers/authController.js';
+import { register, login, refresh, logoutUser, getProfile, updateProfile, checkUsername, forgotPasswordController, resetPasswordController, getAllUsers, updateUserRole, updateUserStatus, getStats, getAchievements, getLeaderboard } from '../controllers/authController.js';
 import { authenticateJWT } from '../middleware/auth.js';
 import { isAdmin } from '../middleware/adminMiddleware.js';
 
@@ -23,6 +23,7 @@ router.get('/profile', authenticateJWT, getProfile);
 router.put('/profile', authenticateJWT, upload.single('avatar'), updateProfile);
 router.get('/stats', authenticateJWT, getStats);
 router.get('/achievements', authenticateJWT, getAchievements);
+router.get('/leaderboard', authenticateJWT, getLeaderboard);
 
 // Admin Routes
 router.get('/users', authenticateJWT, isAdmin, getAllUsers);

@@ -47,6 +47,30 @@ const Dashboard = () => {
         }
     }
 
+    const [deleteConfirm, setDeleteConfirm] = useState(null)
+
+    const handleDeleteFlow = async (flowId) => {
+        try {
+            await flowService.delete(flowId)
+            setRecentFlows(prev => prev.filter(f => f._id !== flowId))
+            setDeleteConfirm(null)
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('Failed to delete flow')
+        }
+    }
+
+    const getStatusBadge = (flow) => {
+        const status = flow.publicStatus || 'private'
+        const map = {
+            private: { label: '🔒 Private', cls: 'private' },
+            pending: { label: '⏳ Pending', cls: 'pending' },
+            approved: { label: '🌍 Public', cls: 'approved' },
+            rejected: { label: '❌ Rejected', cls: 'rejected' }
+        }
+        return map[status] || map.private
+    }
+
     return (
         <div className="dashboard-layout">
             <Sidebar />
@@ -72,24 +96,48 @@ const Dashboard = () => {
                         {loading ? <p>Loading...</p> : (
                             recentFlows.length > 0 ? (
                                 <ul className="dashboard-list">
-                                    {recentFlows.map(flow => (
-                                        <li
-                                            key={flow._id}
-                                            className="list-item"
-                                            style={{ cursor: 'pointer' }}
-                                            onClick={() => navigate(`/flow/${flow._id}`)}
-                                            title="Open in Canvas Editor"
-                                        >
-                                            <span className="item-title">{flow.title || 'Untitled Flow'}</span>
-                                            <span className={`status-badge ${flow.status || 'draft'}`}>{flow.status || 'Draft'}</span>
-                                        </li>
-                                    ))}
+                                    {recentFlows.map(flow => {
+                                        const badge = getStatusBadge(flow)
+                                        return (
+                                            <li
+                                                key={flow._id}
+                                                className="list-item"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                <div className="flow-item-main" onClick={() => navigate(`/flow/${flow._id}`)} title="Open in Canvas Editor">
+                                                    <span className="item-title">{flow.title || 'Untitled Flow'}</span>
+                                                    <span className={`status-badge ${badge.cls}`}>{badge.label}</span>
+                                                </div>
+                                                <button
+                                                    className="flow-delete-btn"
+                                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(flow._id) }}
+                                                    title="Delete flow"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </li>
+                                        )
+                                    })}
                                 </ul>
                             ) : <p className="empty-text">No flows found. Create one to get started!</p>
                         )}
                     </div>
                 </div>
             </main>
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm && (
+                <div className="modal-overlay">
+                    <div className="delete-confirm-modal">
+                        <h3>🗑️ Delete Flow?</h3>
+                        <p>This action cannot be undone. All nodes, edges, and task data in this flow will be permanently deleted.</p>
+                        <div className="delete-confirm-actions">
+                            <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+                            <button className="btn-danger" onClick={() => handleDeleteFlow(deleteConfirm)}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modals */}
             {showCreateFlow && (

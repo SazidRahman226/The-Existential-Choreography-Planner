@@ -30,7 +30,11 @@ const CanvasToolbar = ({
     runner,
     // Focus mode
     onToggleFocus,
-    isFocusActive
+    isFocusActive,
+    // Share
+    publicStatus,
+    onShareClick,
+    isViewer
 }) => {
     const [showTemplates, setShowTemplates] = useState(false)
     const dropdownRef = useRef(null)
@@ -228,16 +232,39 @@ const CanvasToolbar = ({
                 <button className="toolbar-btn" onClick={onFitView} title="Fit to View">⊞</button>
             </div>
 
-            <div className="toolbar-group">
-                <div className={`save-indicator ${saveStatus}`}>
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'unsaved' && '● Unsaved'}
-                    {saveStatus === 'saving' && '↻ Saving...'}
+            {/* Share toggle — hidden for viewers */}
+            {!isFlowRunning && !isViewer && (
+                <div className="toolbar-group">
+                    <button
+                        className={`toolbar-btn share-toggle ${publicStatus === 'approved' ? 'shared' : ''} ${publicStatus === 'pending' ? 'pending' : ''} ${publicStatus === 'rejected' ? 'rejected' : ''}`}
+                        onClick={onShareClick}
+                        title={
+                            publicStatus === 'approved' ? 'Public — click to manage' :
+                                publicStatus === 'pending' ? 'Pending admin review — click for details' :
+                                    publicStatus === 'rejected' ? 'Rejected — click for details' :
+                                        'Private — click to share'
+                        }
+                    >
+                        {publicStatus === 'approved' && '🌍 Public'}
+                        {publicStatus === 'pending' && '⏳ Pending'}
+                        {publicStatus === 'rejected' && '❌ Rejected'}
+                        {(!publicStatus || publicStatus === 'private') && '🔒 Private'}
+                    </button>
                 </div>
-                <button className="toolbar-btn save" onClick={onSave}>
-                    Save
-                </button>
-            </div>
+            )}
+
+            {!isViewer && (
+                <div className="toolbar-group">
+                    <div className={`save-indicator ${saveStatus}`}>
+                        {saveStatus === 'saved' && '✓ Saved'}
+                        {saveStatus === 'unsaved' && '● Unsaved'}
+                        {saveStatus === 'saving' && '↻ Saving...'}
+                    </div>
+                    <button className="toolbar-btn save" onClick={onSave}>
+                        Save
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
