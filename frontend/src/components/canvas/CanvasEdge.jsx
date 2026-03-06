@@ -1,6 +1,6 @@
 import { memo } from 'react'
 
-const CanvasEdge = ({ edge, sourcePos, targetPos, isSelected, onSelect }) => {
+const CanvasEdge = ({ edge, sourcePos, targetPos, isSelected, onSelect, flowStatus }) => {
     if (!sourcePos || !targetPos) return null
 
     const dx = targetPos.x - sourcePos.x
@@ -15,6 +15,21 @@ const CanvasEdge = ({ edge, sourcePos, targetPos, isSelected, onSelect }) => {
     // Midpoint for label and arrow
     const midX = (sourcePos.x + targetPos.x) / 2
     const midY = (sourcePos.y + targetPos.y) / 2
+
+    // Flow-aware edge classes
+    const pathClasses = [
+        'edge-path',
+        isSelected ? 'selected' : '',
+        flowStatus === 'active' ? 'edge-flow-active' : '',
+        flowStatus === 'completed' ? 'edge-flow-completed' : '',
+        !flowStatus && !isSelected ? 'edge-animated' : ''
+    ].filter(Boolean).join(' ')
+
+    const arrowClasses = [
+        'edge-arrow',
+        flowStatus === 'active' ? 'edge-arrow-active' : '',
+        flowStatus === 'completed' ? 'edge-arrow-completed' : ''
+    ].filter(Boolean).join(' ')
 
     return (
         <g>
@@ -33,7 +48,7 @@ const CanvasEdge = ({ edge, sourcePos, targetPos, isSelected, onSelect }) => {
             {/* Visible path */}
             <path
                 d={path}
-                className={`edge-path ${isSelected ? 'selected' : ''} edge-animated`}
+                className={pathClasses}
                 onClick={(e) => {
                     e.stopPropagation()
                     onSelect(edge.id)
@@ -44,7 +59,7 @@ const CanvasEdge = ({ edge, sourcePos, targetPos, isSelected, onSelect }) => {
                 cx={midX}
                 cy={midY}
                 r="4"
-                className="edge-arrow"
+                className={arrowClasses}
             />
             {/* Edge label (for decision edges) */}
             {edge.label && (

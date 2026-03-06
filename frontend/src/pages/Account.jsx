@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useAuth } from '../providers'
 import Sidebar from '../components/dashboard/Sidebar'
+import AchievementShowcase from '../components/achievements/AchievementShowcase'
+import MySessions from '../components/account/MySessions'
 import '../styles/auth.css'
 
 const Account = () => {
@@ -328,27 +330,11 @@ const Account = () => {
                         )}
 
                         {!isEditing && (
-                            /* Badges Section */
-                            <div className="dashboard-card badges-card">
-                                <h3>Badges & Achievements</h3>
-                                {user.badges && user.badges.length > 0 ? (
-                                    <div className="badges-grid">
-                                        {user.badges.map((badge, index) => (
-                                            <div key={index} className="badge-item">
-                                                <div className="badge-icon">
-                                                    {badge.icon || '🏆'}
-                                                </div>
-                                                <span className="badge-name">{badge.name}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="empty-state">
-                                        <span className="empty-icon">🛡️</span>
-                                        <p>No badges earned yet. Complete tasks to earn them!</p>
-                                    </div>
-                                )}
-                            </div>
+                            <AchievementShowcase />
+                        )}
+
+                        {!isEditing && (
+                            <MySessions />
                         )}
                     </div>
                 </div>

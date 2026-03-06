@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import CanvasNode from './CanvasNode'
 import CanvasEdge from './CanvasEdge'
+import { isChronologicalEdge, parseScheduledTime } from '../../utils/scheduleValidation'
 
 const FlowCanvas = ({
     nodes,
@@ -14,7 +15,8 @@ const FlowCanvas = ({
     onEdgeDelete,
     onDoubleClickAdd,
     onStatusCycle,
-    containerRef
+    containerRef,
+    runnerState
 }) => {
     const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
     const [isPanning, setIsPanning] = useState(false)
@@ -28,6 +30,60 @@ const FlowCanvas = ({
     const [connecting, setConnecting] = useState(null) // { sourceId, startX, startY, currentX, currentY }
 
     const viewportRef = useRef(null)
+
+    // ---- Enforce time ordering for pinned nodes ----
+    // After a pinned node is dragged, ensure all pinned nodes are ordered left→right by scheduledStart
+    const enforceTimeOrder = useCallback((currentNodes) => {
+        const pinnedNodes = currentNodes.filter(
+            n => n.data?.isPinned && n.data?.scheduledStart && (n.data?.nodeType || 'task') === 'task'
+        )
+        if (pinnedNodes.length < 2) return currentNodes
+
+        // Sort pinned by scheduledStart time
+        const sorted = [...pinnedNodes].sort((a, b) => {
+            const aTime = parseScheduledTime(a.data.scheduledStart) || 0
+            const bTime = parseScheduledTime(b.data.scheduledStart) || 0
+            return aTime - bTime
+        })
+
+        // Check if any pinned node violates left→right ordering
+        let needsCorrection = false
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].position.x <= sorted[i - 1].position.x) {
+                needsCorrection = true
+                break
+            }
+        }
+
+        if (!needsCorrection) return currentNodes
+
+        // Fix positions: ensure each later-pinned node is at least 250px to the right
+        const correctedPositions = new Map()
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].position.x <= sorted[i - 1].position.x) {
+                // Snap the node that should be to the right, to 250px past the previous one
+                const correctedX = sorted[i - 1].position.x + 250
+                correctedPositions.set(sorted[i].id, correctedX)
+                // Update in-memory position so subsequent comparisons use the corrected value
+                sorted[i] = {
+                    ...sorted[i],
+                    position: { ...sorted[i].position, x: correctedX }
+                }
+            }
+        }
+
+        if (correctedPositions.size === 0) return currentNodes
+
+        return currentNodes.map(n => {
+            if (correctedPositions.has(n.id)) {
+                return {
+                    ...n,
+                    position: { ...n.position, x: correctedPositions.get(n.id) }
+                }
+            }
+            return n
+        })
+    }, [])
 
     // ---- Zoom ----
     const handleWheel = useCallback((e) => {
@@ -147,6 +203,11 @@ const FlowCanvas = ({
 
         // Finish node drag
         if (dragNodeId) {
+            // Enforce time ordering for pinned nodes after drag
+            const draggedNode = nodes.find(n => n.id === dragNodeId)
+            if (draggedNode?.data?.isPinned && draggedNode?.data?.scheduledStart) {
+                onNodesChange(prevNodes => enforceTimeOrder(prevNodes))
+            }
             setDragNodeId(null)
         }
 
@@ -163,18 +224,27 @@ const FlowCanvas = ({
                     edge => edge.source === connecting.sourceId && edge.target === targetNodeId
                 )
                 if (!exists) {
-                    const newEdge = {
-                        id: `edge_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-                        source: connecting.sourceId,
-                        target: targetNodeId,
-                        animated: true
+                    // Chronological validation for pinned nodes
+                    const sourceNode = nodes.find(n => n.id === connecting.sourceId)
+                    const targetNode = nodes.find(n => n.id === targetNodeId)
+                    const chronoCheck = isChronologicalEdge(sourceNode, targetNode)
+
+                    if (!chronoCheck.valid) {
+                        alert(`⚠️ ${chronoCheck.message}`)
+                    } else {
+                        const newEdge = {
+                            id: `edge_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                            source: connecting.sourceId,
+                            target: targetNodeId,
+                            animated: true
+                        }
+                        onEdgesChange(prev => [...prev, newEdge])
                     }
-                    onEdgesChange(prev => [...prev, newEdge])
                 }
             }
             setConnecting(null)
         }
-    }, [dragNodeId, connecting, edges, onEdgesChange])
+    }, [dragNodeId, connecting, edges, nodes, onEdgesChange, onNodesChange, enforceTimeOrder])
 
     // ---- Node Dragging ----
     const handleNodeDragStart = useCallback((nodeId, e) => {
@@ -283,16 +353,35 @@ const FlowCanvas = ({
                     </defs>
 
                     {/* Existing edges */}
-                    {edges.map(edge => (
-                        <CanvasEdge
-                            key={edge.id}
-                            edge={edge}
-                            sourcePos={getHandlePos(edge.source, 'output')}
-                            targetPos={getHandlePos(edge.target, 'input')}
-                            isSelected={selectedEdgeId === edge.id}
-                            onSelect={onEdgeSelect}
-                        />
-                    ))}
+                    {edges.map(edge => {
+                        // Compute edge flow status for visual effects
+                        let flowStatus = null
+                        if (runnerState?.status === 'running' || runnerState?.status === 'paused') {
+                            const activeId = runnerState.activeNodeId
+                            const sourceNode = nodes.find(n => n.id === edge.source)
+                            const targetNode = nodes.find(n => n.id === edge.target)
+                            const sourceCompleted = sourceNode?.data?.status === 'completed'
+                            const targetCompleted = targetNode?.data?.status === 'completed'
+
+                            if (edge.source === activeId || edge.target === activeId) {
+                                flowStatus = 'active'
+                            } else if (sourceCompleted && targetCompleted) {
+                                flowStatus = 'completed'
+                            }
+                        }
+
+                        return (
+                            <CanvasEdge
+                                key={edge.id}
+                                edge={edge}
+                                sourcePos={getHandlePos(edge.source, 'output')}
+                                targetPos={getHandlePos(edge.target, 'input')}
+                                isSelected={selectedEdgeId === edge.id}
+                                onSelect={onEdgeSelect}
+                                flowStatus={flowStatus}
+                            />
+                        )
+                    })}
 
                     {/* Temp connection line while drawing */}
                     {connecting && (
@@ -316,6 +405,7 @@ const FlowCanvas = ({
                         onDragStart={handleNodeDragStart}
                         onConnectionStart={handleConnectionStart}
                         onStatusCycle={onStatusCycle}
+                        runnerState={runnerState}
                         zoom={viewport.zoom}
                     />
                 ))}

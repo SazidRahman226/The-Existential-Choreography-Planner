@@ -1,14 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
 
 const TASK_TEMPLATES = [
-    { id: 'study', emoji: '📖', label: 'Study Session', difficulty: 'medium', pointsReward: 50, energyCost: 10, duration: 45, nodeType: 'task' },
-    { id: 'practice', emoji: '✍️', label: 'Practice', difficulty: 'easy', pointsReward: 25, energyCost: 5, duration: 30, nodeType: 'task' },
-    { id: 'review', emoji: '📝', label: 'Review', difficulty: 'easy', pointsReward: 15, energyCost: 3, duration: 15, nodeType: 'task' },
-    { id: 'exercise', emoji: '🏋️', label: 'Exercise', difficulty: 'hard', pointsReward: 75, energyCost: 15, duration: 60, nodeType: 'task' },
-    { id: 'project', emoji: '🚀', label: 'Project Work', difficulty: 'hard', pointsReward: 100, energyCost: 20, duration: 90, nodeType: 'task' },
+    { id: 'study', emoji: '📖', label: 'Study Session', difficulty: 'medium', pointsReward: 50, energyCost: 10, duration: 45, nodeType: 'task', sessionMode: 'focus' },
+    { id: 'practice', emoji: '✍️', label: 'Practice', difficulty: 'easy', pointsReward: 25, energyCost: 5, duration: 30, nodeType: 'task', sessionMode: 'focus' },
+    { id: 'review', emoji: '📝', label: 'Review', difficulty: 'easy', pointsReward: 15, energyCost: 3, duration: 15, nodeType: 'task', sessionMode: 'zen' },
+    { id: 'exercise', emoji: '🏋️', label: 'Exercise', difficulty: 'hard', pointsReward: 75, energyCost: 15, duration: 60, nodeType: 'task', sessionMode: 'grind' },
+    { id: 'project', emoji: '🚀', label: 'Project Work', difficulty: 'hard', pointsReward: 100, energyCost: 20, duration: 90, nodeType: 'task', sessionMode: 'sprint' },
     { id: 'decision', emoji: '❓', label: 'Decision', difficulty: 'medium', pointsReward: 0, energyCost: 0, duration: 0, nodeType: 'decision' },
-    { id: 'custom', emoji: '🎯', label: 'Custom Task', difficulty: 'medium', pointsReward: 50, energyCost: 10, duration: 30, nodeType: 'task' },
+    { id: 'custom', emoji: '🎯', label: 'Custom Task', difficulty: 'medium', pointsReward: 50, energyCost: 10, duration: 30, nodeType: 'task', sessionMode: 'chill' },
 ]
+
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+}
 
 const CanvasToolbar = ({
     flowTitle,
@@ -19,7 +25,16 @@ const CanvasToolbar = ({
     onZoomOut,
     onFitView,
     onSave,
-    onBack
+    onBack,
+    // Runner props
+    runner,
+    // Focus mode
+    onToggleFocus,
+    isFocusActive,
+    // Share
+    publicStatus,
+    onShareClick,
+    isViewer
 }) => {
     const [showTemplates, setShowTemplates] = useState(false)
     const dropdownRef = useRef(null)
@@ -39,6 +54,8 @@ const CanvasToolbar = ({
         setShowTemplates(false)
     }
 
+    const isFlowRunning = runner && !runner.isIdle
+
     return (
         <div className="canvas-toolbar">
             <button className="toolbar-btn back" onClick={onBack} title="Back to Dashboard">
@@ -50,37 +67,163 @@ const CanvasToolbar = ({
                 <span className="flow-name">{flowTitle || 'Untitled Flow'}</span>
             </div>
 
-            <div className="toolbar-group" ref={dropdownRef}>
-                <button
-                    className="toolbar-btn primary"
-                    onClick={() => setShowTemplates(!showTemplates)}
-                >
-                    + Task ▾
-                </button>
-                {showTemplates && (
-                    <div className="template-dropdown">
-                        <div className="template-dropdown-header">Choose Template</div>
-                        {TASK_TEMPLATES.map(t => (
+            {/* Template dropdown — only when idle */}
+            {!isFlowRunning && (
+                <div className="toolbar-group" ref={dropdownRef}>
+                    <button
+                        className="toolbar-btn primary"
+                        onClick={() => setShowTemplates(!showTemplates)}
+                    >
+                        + Task ▾
+                    </button>
+                    {showTemplates && (
+                        <div className="template-dropdown">
+                            <div className="template-dropdown-header">Choose Template</div>
+                            {TASK_TEMPLATES.map(t => (
+                                <button
+                                    key={t.id}
+                                    className={`template-option ${t.nodeType === 'decision' ? 'template-decision' : ''}`}
+                                    onClick={() => handleTemplateSelect(t)}
+                                >
+                                    <span className="template-emoji">{t.emoji}</span>
+                                    <div className="template-info">
+                                        <span className="template-name">{t.label}</span>
+                                        <span className="template-stats">
+                                            {t.nodeType === 'decision'
+                                                ? 'Branching point'
+                                                : `⭐${t.pointsReward} ⚡${t.energyCost} ⏱${t.duration}m`
+                                            }
+                                        </span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ---- Runner Controls ---- */}
+            {runner && (
+                <div className="toolbar-group runner-controls">
+                    {runner.isIdle && (
+                        <button
+                            className="toolbar-btn runner-start"
+                            onClick={runner.startFlow}
+                            title="Start Flow"
+                        >
+                            ▶ Run
+                        </button>
+                    )}
+
+                    {runner.isRunning && (
+                        <>
                             <button
-                                key={t.id}
-                                className={`template-option ${t.nodeType === 'decision' ? 'template-decision' : ''}`}
-                                onClick={() => handleTemplateSelect(t)}
+                                className="toolbar-btn runner-pause"
+                                onClick={runner.pauseFlow}
+                                title="Pause"
                             >
-                                <span className="template-emoji">{t.emoji}</span>
-                                <div className="template-info">
-                                    <span className="template-name">{t.label}</span>
-                                    <span className="template-stats">
-                                        {t.nodeType === 'decision'
-                                            ? 'Branching point'
-                                            : `⭐${t.pointsReward} ⚡${t.energyCost} ⏱${t.duration}m`
-                                        }
-                                    </span>
-                                </div>
+                                ⏸ Pause
                             </button>
-                        ))}
-                    </div>
-                )}
-            </div>
+                            <button
+                                className="toolbar-btn runner-done"
+                                onClick={runner.completeTaskEarly}
+                                title="Mark task as done (early completion)"
+                            >
+                                ✓ Done
+                            </button>
+                            <button
+                                className="toolbar-btn runner-skip"
+                                onClick={runner.skipTask}
+                                title="Skip current task"
+                            >
+                                ⏭ Skip
+                            </button>
+                        </>
+                    )}
+
+                    {runner.isPaused && (
+                        <button
+                            className="toolbar-btn runner-resume"
+                            onClick={runner.resumeFlow}
+                            title="Resume"
+                        >
+                            ▶ Resume
+                        </button>
+                    )}
+
+                    {(runner.isRunning || runner.isPaused) && (
+                        <button
+                            className="toolbar-btn runner-stop"
+                            onClick={runner.stopFlow}
+                            title="Stop flow"
+                        >
+                            ⏹ Stop
+                        </button>
+                    )}
+
+                    {runner.isCompleted && (
+                        <button
+                            className="toolbar-btn runner-start"
+                            onClick={runner.startFlow}
+                            title="Restart Flow"
+                        >
+                            🔁 Restart
+                        </button>
+                    )}
+
+                    {/* Focus Mode button — visible when a task is active */}
+                    {(runner.isRunning || runner.isPaused) && runner.activeNodeId && (
+                        <button
+                            className={`toolbar-btn focus-enter-btn ${isFocusActive ? 'active' : ''}`}
+                            onClick={onToggleFocus}
+                            title={isFocusActive ? 'Exit Focus Mode' : 'Enter Focus Mode'}
+                        >
+                            🎯 {isFocusActive ? 'Exit Focus' : 'Focus'}
+                        </button>
+                    )}
+
+                    {/* Waiting state for pinned nodes */}
+                    {runner.isWaiting && (
+                        <>
+                            <div className="runner-waiting-info">
+                                ⏳ Starts in <span className="runner-waiting-time">{runner.waitingCountdown}</span>
+                            </div>
+                            <button
+                                className="toolbar-btn runner-start"
+                                onClick={runner.startNow}
+                                title="Override schedule and start now"
+                            >
+                                ▶ Start Now
+                            </button>
+                        </>
+                    )}
+
+                    {/* Timer display */}
+                    {(runner.isRunning || runner.isPaused) && runner.timeRemaining > 0 && (
+                        <div className={`runner-timer ${runner.isPaused ? 'paused' : ''}`}>
+                            ⏱ {formatTime(runner.timeRemaining)}
+                        </div>
+                    )}
+
+                    {/* Progress bar */}
+                    {isFlowRunning && (
+                        <div className="runner-progress-bar" title={`${runner.progress}% complete`}>
+                            <div
+                                className="runner-progress-fill"
+                                style={{ width: `${runner.progress}%` }}
+                            />
+                            <span className="runner-progress-label">{runner.progress}%</span>
+                        </div>
+                    )}
+
+                    {/* Streak counter */}
+                    {isFlowRunning && runner.streakCount >= 2 && (
+                        <div className="streak-counter" title={`${runner.streakCount} tasks on time in a row!`}>
+                            🔥 {runner.streakCount}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="toolbar-group">
                 <button className="toolbar-btn" onClick={onZoomOut} title="Zoom Out">−</button>
@@ -89,16 +232,39 @@ const CanvasToolbar = ({
                 <button className="toolbar-btn" onClick={onFitView} title="Fit to View">⊞</button>
             </div>
 
-            <div className="toolbar-group">
-                <div className={`save-indicator ${saveStatus}`}>
-                    {saveStatus === 'saved' && '✓ Saved'}
-                    {saveStatus === 'unsaved' && '● Unsaved'}
-                    {saveStatus === 'saving' && '↻ Saving...'}
+            {/* Share toggle — hidden for viewers */}
+            {!isFlowRunning && !isViewer && (
+                <div className="toolbar-group">
+                    <button
+                        className={`toolbar-btn share-toggle ${publicStatus === 'approved' ? 'shared' : ''} ${publicStatus === 'pending' ? 'pending' : ''} ${publicStatus === 'rejected' ? 'rejected' : ''}`}
+                        onClick={onShareClick}
+                        title={
+                            publicStatus === 'approved' ? 'Public — click to manage' :
+                                publicStatus === 'pending' ? 'Pending admin review — click for details' :
+                                    publicStatus === 'rejected' ? 'Rejected — click for details' :
+                                        'Private — click to share'
+                        }
+                    >
+                        {publicStatus === 'approved' && '🌍 Public'}
+                        {publicStatus === 'pending' && '⏳ Pending'}
+                        {publicStatus === 'rejected' && '❌ Rejected'}
+                        {(!publicStatus || publicStatus === 'private') && '🔒 Private'}
+                    </button>
                 </div>
-                <button className="toolbar-btn save" onClick={onSave}>
-                    Save
-                </button>
-            </div>
+            )}
+
+            {!isViewer && (
+                <div className="toolbar-group">
+                    <div className={`save-indicator ${saveStatus}`}>
+                        {saveStatus === 'saved' && '✓ Saved'}
+                        {saveStatus === 'unsaved' && '● Unsaved'}
+                        {saveStatus === 'saving' && '↻ Saving...'}
+                    </div>
+                    <button className="toolbar-btn save" onClick={onSave}>
+                        Save
+                    </button>
+                </div>
+            )}
         </div>
     )
 }

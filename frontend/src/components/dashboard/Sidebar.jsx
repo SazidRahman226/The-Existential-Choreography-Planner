@@ -32,18 +32,25 @@ const Sidebar = () => {
 
                 {isAdmin && (
                     <Link
-                        to="/users"
-                        className={`nav-item ${currentPath === '/users' ? 'active' : ''}`}
+                        to="/admin"
+                        className={`nav-item ${currentPath === '/admin' ? 'active' : ''}`}
                     >
-                        <span>👥</span> Users
+                        <span>🛡️</span> Admin Panel
                     </Link>
                 )}
 
                 <Link
-                    to="/dashboard"
-                    className={`nav-item ${currentPath.startsWith('/flow') ? 'active' : ''}`}
+                    to="/explore"
+                    className={`nav-item ${currentPath === '/explore' ? 'active' : ''}`}
                 >
-                    <span>🌊</span> Flows
+                    <span>🌍</span> Explore
+                </Link>
+
+                <Link
+                    to="/leaderboard"
+                    className={`nav-item ${currentPath === '/leaderboard' ? 'active' : ''}`}
+                >
+                    <span>🏆</span> Leaderboard
                 </Link>
 
                 {/* 

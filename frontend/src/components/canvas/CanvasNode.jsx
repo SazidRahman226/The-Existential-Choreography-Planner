@@ -1,4 +1,5 @@
 import { memo, useCallback, useRef } from 'react'
+import { formatScheduledTime } from '../../utils/scheduleValidation'
 
 const DIFFICULTY_CONFIG = {
     easy: { emoji: '🟢', label: 'Easy' },
@@ -64,6 +65,7 @@ const CanvasNode = ({
     const diffConfig = DIFFICULTY_CONFIG[difficulty]
     const isCompleted = status === 'completed'
     const isActive = runnerState?.activeNodeId === node.id
+    const isPinned = node.data?.isPinned && node.data?.scheduledStart
 
     // Render based on node type
     const renderNodeContent = () => {
@@ -123,7 +125,18 @@ const CanvasNode = ({
                         ⚡ {node.data?.energyCost ?? 10}
                     </span>
                 </div>
-                {isActive && runnerState?.timeRemaining != null && (
+                {isPinned && (
+                    <div className="node-pin-badge" title={`Scheduled at ${formatScheduledTime(node.data.scheduledStart)}`}>
+                        📌 {formatScheduledTime(node.data.scheduledStart)}
+                    </div>
+                )}
+                {isActive && runnerState?.isWaiting && (
+                    <div className="node-waiting-overlay">
+                        <span>⏳</span>
+                        <span className="node-waiting-label">Waiting...</span>
+                    </div>
+                )}
+                {isActive && !runnerState?.isWaiting && runnerState?.timeRemaining != null && (
                     <div className="node-countdown-overlay">
                         {formatTime(runnerState.timeRemaining)}
                     </div>
@@ -142,7 +155,8 @@ const CanvasNode = ({
                 `nodetype-${nodeType}`,
                 nodeType === 'task' ? `status-${status}` : '',
                 isCompleted ? 'node-completed' : '',
-                isActive ? 'node-active-running' : ''
+                isActive ? 'node-active-running' : '',
+                isPinned ? 'node-pinned' : ''
             ].filter(Boolean).join(' ')}
             style={{
                 transform: `translate(${node.position.x}px, ${node.position.y}px)`,

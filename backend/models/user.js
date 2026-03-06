@@ -81,10 +81,33 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 1
     },
+    lastSessionDate: {
+        type: Date,
+        default: null
+    },
     badges: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Badge'
-    }]
+        key: { type: String, required: true },
+        unlockedAt: { type: Date, default: Date.now }
+    }],
+    stats: {
+        tasksCompleted: { type: Number, default: 0 },
+        personalRecords: { type: Number, default: 0 },
+        focusTasks: { type: Number, default: 0 },
+        earlyFinishes: { type: Number, default: 0 },
+        zenTasks: { type: Number, default: 0 },
+        rouletteWins: { type: Number, default: 0 },
+        bestStreak: { type: Number, default: 0 },
+        flowsCompleted: { type: Number, default: 0 },
+        flowsCreated: { type: Number, default: 0 },
+        consecutiveDays: { type: Number, default: 0 },
+        lastActiveDate: { type: Date, default: null },
+        pinnedFlows: { type: Number, default: 0 },
+        perfectRuns: { type: Number, default: 0 },
+        nightTasks: { type: Number, default: 0 },
+        earlyTasks: { type: Number, default: 0 },
+        comebacks: { type: Number, default: 0 },
+        consecutiveFails: { type: Number, default: 0 }
+    }
 }, {
     timestamps: true
 });

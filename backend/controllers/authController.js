@@ -2,7 +2,8 @@ import passport from 'passport';
 import { registerUser, generateTokens, refreshTokens, logout, forgotPassword, resetPassword } from '../services/authService.js';
 import sendEmail from '../utils/sendEmail.js';
 import { User } from '../models/user.js';
-import { Badge } from '../models/badge.js'; // Import to ensure schema registration
+import { calculateLevel, getTitleForLevel, xpForLevel, getEnergyWarning } from '../utils/gamification.js';
+import { ACHIEVEMENTS, CATEGORIES, getProgress } from '../utils/achievements.js';
 
 // Helper to set cookies
 const setTokenCookies = (res, accessToken, refreshToken) => {
@@ -144,7 +145,7 @@ export const logoutUser = async (req, res) => {
 // Get current user profile
 export const getProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).populate('badges');
+        const user = await User.findById(req.user._id);
         res.json({ user });
     } catch (error) {
         console.error('Get Profile Error:', error);
@@ -186,7 +187,7 @@ export const updateProfile = async (req, res) => {
                 ...(avatar !== undefined && !req.file && { avatar }) // Fallback if avatar is sent as string (e.g. clear)
             },
             { new: true, runValidators: true }
-        ).populate('badges');
+        );
 
         res.json({
             message: 'Profile updated successfully',
@@ -306,6 +307,144 @@ export const resetPasswordController = async (req, res) => {
 
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+};
+
+// Get gamification stats for the current user
+export const getStats = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Apply passive energy regen
+        await user.updateEnergy();
+
+        // Calculate level and title
+        const level = calculateLevel(user.points);
+        const title = getTitleForLevel(level);
+
+        // XP progress within current level
+        const currentLevelXP = xpForLevel(level);
+        const nextLevelXP = xpForLevel(level + 1);
+        const xpInCurrentLevel = user.points - currentLevelXP;
+        const xpNeededForNextLevel = nextLevelXP - currentLevelXP;
+        const xpPercent = xpNeededForNextLevel > 0
+            ? Math.round((xpInCurrentLevel / xpNeededForNextLevel) * 100)
+            : 100;
+
+        // Energy regen ETA
+        let energyRegenETA = null;
+        if (user.energy < 100) {
+            const energyNeeded = 100 - user.energy;
+            const minutesNeeded = energyNeeded * 6; // 6 min per 1 energy
+            const hours = Math.floor(minutesNeeded / 60);
+            const mins = minutesNeeded % 60;
+            energyRegenETA = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+        }
+
+        res.json({
+            level,
+            title,
+            totalXP: user.points,
+            xpProgress: {
+                current: xpInCurrentLevel,
+                needed: xpNeededForNextLevel,
+                percent: xpPercent
+            },
+            energy: user.energy,
+            maxEnergy: 100,
+            energyRegenETA,
+            energyWarning: getEnergyWarning(user.energy),
+            lastSessionDate: user.lastSessionDate
+        });
+    } catch (error) {
+        console.error('Get Stats Error:', error);
+        res.status(500).json({ message: 'Error fetching stats' });
+    }
+};
+
+// Get achievements with unlock status and progress
+export const getAchievements = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const earnedKeys = new Set((user.badges || []).map(b => b.key));
+        const badgeMap = {};
+        for (const b of (user.badges || [])) {
+            badgeMap[b.key] = b.unlockedAt;
+        }
+
+        const achievements = ACHIEVEMENTS.map(a => {
+            const unlocked = earnedKeys.has(a.key);
+            const progress = getProgress(a, user.stats || {}, user);
+
+            return {
+                key: a.key,
+                name: a.name,
+                emoji: a.emoji,
+                description: a.description,
+                category: a.category,
+                xpBonus: a.xpBonus,
+                unlocked,
+                unlockedAt: unlocked ? badgeMap[a.key] : null,
+                progress
+            };
+        });
+
+        res.json({
+            achievements,
+            categories: CATEGORIES,
+            totalUnlocked: achievements.filter(a => a.unlocked).length,
+            totalAchievements: achievements.length
+        });
+    } catch (error) {
+        console.error('Get Achievements Error:', error);
+        res.status(500).json({ message: 'Error fetching achievements' });
+    }
+};
+
+
+// Get leaderboard
+export const getLeaderboard = async (req, res) => {
+    try {
+        const { period = 'alltime' } = req.query;
+
+        let filter = { isActive: true };
+
+        if (period === 'weekly') {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            filter.lastSessionDate = { $gte: sevenDaysAgo };
+        }
+
+        const users = await User.find(filter)
+            .sort({ points: -1 })
+            .limit(50)
+            .select('fullName username avatar level points badges stats');
+
+        const leaderboard = users.map((u, index) => {
+            const title = getTitleForLevel(u.level);
+            return {
+                rank: index + 1,
+                _id: u._id,
+                fullName: u.fullName,
+                username: u.username,
+                avatar: u.avatar,
+                level: u.level,
+                title: title.label,
+                titleEmoji: title.emoji,
+                totalXP: u.points,
+                badgeCount: u.badges?.length || 0,
+                tasksCompleted: u.stats?.tasksCompleted || 0,
+                bestStreak: u.stats?.bestStreak || 0
+            };
+        });
+
+        res.json(leaderboard);
+    } catch (error) {
+        console.error('Leaderboard Error:', error);
+        res.status(500).json({ message: 'Error fetching leaderboard' });
     }
 };
 

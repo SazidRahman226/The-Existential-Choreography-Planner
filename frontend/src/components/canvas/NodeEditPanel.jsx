@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { formatScheduledTime, computeScheduledEnd } from '../../utils/scheduleValidation'
 
 const DIFFICULTY_PRESETS = {
     easy: { pointsReward: 25, energyCost: 5, label: 'Easy', emoji: '🟢' },
@@ -8,7 +9,7 @@ const DIFFICULTY_PRESETS = {
 
 const DURATION_PRESETS = [15, 30, 45, 60]
 
-const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, onClose }) => {
+const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, onClose, sessions }) => {
     const nodeType = node?.data?.nodeType || 'task'
 
     const [formData, setFormData] = useState({
@@ -18,8 +19,11 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
         pointsReward: 50,
         energyCost: 10,
         duration: 30,
+        sessionMode: 'focus',
         shape: 'rectangle',
-        showAdvanced: false
+        showAdvanced: false,
+        isPinned: false,
+        scheduledStart: null
     })
 
     useEffect(() => {
@@ -31,8 +35,11 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                 pointsReward: node.data?.pointsReward ?? 50,
                 energyCost: node.data?.energyCost ?? 10,
                 duration: node.data?.duration ?? 30,
+                sessionMode: node.data?.sessionMode || 'focus',
                 shape: node.shape || 'rectangle',
-                showAdvanced: false
+                showAdvanced: false,
+                isPinned: node.data?.isPinned || false,
+                scheduledStart: node.data?.scheduledStart || null
             })
         }
     }, [node])
@@ -50,7 +57,10 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                 pointsReward: parseInt(updates.pointsReward !== undefined ? updates.pointsReward : formData.pointsReward) || 0,
                 energyCost: parseInt(updates.energyCost !== undefined ? updates.energyCost : formData.energyCost) || 0,
                 duration: parseInt(updates.duration !== undefined ? updates.duration : formData.duration) || 30,
-                status: node.data?.status || 'pending'
+                sessionMode: updates.sessionMode !== undefined ? updates.sessionMode : formData.sessionMode,
+                status: node.data?.status || 'pending',
+                isPinned: updates.isPinned !== undefined ? updates.isPinned : formData.isPinned,
+                scheduledStart: updates.scheduledStart !== undefined ? updates.scheduledStart : formData.scheduledStart
             }
         })
     }
@@ -227,17 +237,111 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                                 {mins}m
                             </button>
                         ))}
-                        <input
-                            type="number"
-                            name="duration"
-                            value={formData.duration}
-                            onChange={handleChange}
-                            min="1"
-                            max="480"
-                            className="duration-custom"
-                            title="Custom duration in minutes"
-                        />
+                        <div className={`duration-custom-wrapper ${!DURATION_PRESETS.includes(Number(formData.duration)) ? 'active' : ''}`}>
+                            <input
+                                type="number"
+                                name="duration"
+                                value={formData.duration}
+                                onChange={handleChange}
+                                min="1"
+                                max="480"
+                                className="duration-custom"
+                                title="Custom duration in minutes"
+                            />
+                            <span className="duration-unit">min</span>
+                        </div>
                     </div>
+                </div>
+
+                <div className="form-group pin-schedule-group">
+                    <label className="pin-toggle-label">
+                        <input
+                            type="checkbox"
+                            checked={formData.isPinned}
+                            onChange={(e) => {
+                                const pinned = e.target.checked
+                                const updates = { isPinned: pinned }
+                                if (!pinned) updates.scheduledStart = null
+                                setFormData(prev => ({ ...prev, ...updates }))
+                                pushUpdate(updates)
+                            }}
+                        />
+                        <span>📌 Pin to a specific time</span>
+                    </label>
+
+                    {formData.isPinned && (
+                        <div className="time-picker-row">
+                            <div className="time-picker">
+                                <label className="time-picker-sublabel">Start Time</label>
+                                <div className="time-picker-inputs">
+                                    <select
+                                        value={formData.scheduledStart ? (() => {
+                                            const [h] = (formData.scheduledStart || '12:00').split(':')
+                                            const h24 = parseInt(h, 10)
+                                            return h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24
+                                        })() : 9}
+                                        onChange={(e) => {
+                                            const h12 = parseInt(e.target.value, 10)
+                                            const currentParts = (formData.scheduledStart || '09:00').split(':')
+                                            const currentH24 = parseInt(currentParts[0], 10)
+                                            const isPM = currentH24 >= 12
+                                            let h24 = isPM ? (h12 === 12 ? 12 : h12 + 12) : (h12 === 12 ? 0 : h12)
+                                            const m = currentParts[1] || '00'
+                                            const newTime = `${h24.toString().padStart(2, '0')}:${m}`
+                                            setFormData(prev => ({ ...prev, scheduledStart: newTime }))
+                                            pushUpdate({ scheduledStart: newTime })
+                                        }}
+                                        className="time-select"
+                                    >
+                                        {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => (
+                                            <option key={h} value={h}>{h}</option>
+                                        ))}
+                                    </select>
+                                    <span className="time-colon">:</span>
+                                    <select
+                                        value={formData.scheduledStart ? formData.scheduledStart.split(':')[1] : '00'}
+                                        onChange={(e) => {
+                                            const currentParts = (formData.scheduledStart || '09:00').split(':')
+                                            const newTime = `${currentParts[0]}:${e.target.value}`
+                                            setFormData(prev => ({ ...prev, scheduledStart: newTime }))
+                                            pushUpdate({ scheduledStart: newTime })
+                                        }}
+                                        className="time-select"
+                                    >
+                                        {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => (
+                                            <option key={m} value={m}>{m}</option>
+                                        ))}
+                                    </select>
+                                    <select
+                                        value={formData.scheduledStart ? (parseInt(formData.scheduledStart.split(':')[0], 10) >= 12 ? 'PM' : 'AM') : 'AM'}
+                                        onChange={(e) => {
+                                            const currentParts = (formData.scheduledStart || '09:00').split(':')
+                                            let h24 = parseInt(currentParts[0], 10)
+                                            const wasPM = h24 >= 12
+                                            const isPM = e.target.value === 'PM'
+                                            if (wasPM && !isPM) h24 -= 12
+                                            else if (!wasPM && isPM) h24 += 12
+                                            const newTime = `${h24.toString().padStart(2, '0')}:${currentParts[1]}`
+                                            setFormData(prev => ({ ...prev, scheduledStart: newTime }))
+                                            pushUpdate({ scheduledStart: newTime })
+                                        }}
+                                        className="time-select ampm-select"
+                                    >
+                                        <option value="AM">AM</option>
+                                        <option value="PM">PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                            {formData.scheduledStart && (
+                                <div className="scheduled-end-display">
+                                    <span className="end-label">Ends at</span>
+                                    <span className="end-time">
+                                        {formatScheduledTime(computeScheduledEnd(formData.scheduledStart, formData.duration))}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="form-group">
@@ -254,6 +358,30 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                                 <span className="difficulty-stats">⭐{preset.pointsReward} ⚡{preset.energyCost}</span>
                             </button>
                         ))}
+                    </div>
+                </div>
+
+                <div className="form-group">
+                    <label>Session Mode</label>
+                    <div className="mode-selector">
+                        {(sessions || []).map(s => (
+                            <button
+                                key={s._id}
+                                className={`mode-option ${formData.sessionMode === s._id ? 'active' : ''}`}
+                                onClick={() => {
+                                    setFormData(prev => ({ ...prev, sessionMode: s._id }))
+                                    pushUpdate({ sessionMode: s._id })
+                                }}
+                                style={formData.sessionMode === s._id ? { borderColor: '#6366f1', background: '#6366f118' } : {}}
+                                title={s.name}
+                            >
+                                <span className="mode-emoji">{s.emoji}</span>
+                                <span className="mode-label">{s.name}</span>
+                            </button>
+                        ))}
+                        {(!sessions || sessions.length === 0) && (
+                            <p className="empty-text" style={{ fontSize: '0.75rem' }}>No sessions available. Admin can create them in the Admin Panel.</p>
+                        )}
                     </div>
                 </div>
 

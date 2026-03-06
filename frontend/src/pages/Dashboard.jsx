@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../providers'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/dashboard/Sidebar'
+import StatsBar from '../components/dashboard/StatsBar'
 import CreateFlowModal from '../components/dashboard/CreateFlowModal'
 import CreateTaskModal from '../components/dashboard/CreateTaskModal'
 import flowService from '../services/flow.service'
@@ -12,9 +13,8 @@ const Dashboard = () => {
     const { user } = useAuth()
     const navigate = useNavigate()
     const [recentFlows, setRecentFlows] = useState([])
-    const [recentTasks, setRecentTasks] = useState([])
     const [loading, setLoading] = useState(true)
-    const { checkAuth } = useAuth() // Need this to refresh points/energy
+    const { checkAuth } = useAuth()
 
     // Modal States
     const [showCreateFlow, setShowCreateFlow] = useState(false)
@@ -23,19 +23,9 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Parallel fetch
-                const [flowsData, tasksData] = await Promise.all([
-                    flowService.getAll(),
-                    taskService.getAll()
-                ])
-
-                // Assuming API returns array directly or { data: [] }
-                // Adjust based on actual API response structure if needed
+                const flowsData = await flowService.getAll()
                 const flows = Array.isArray(flowsData) ? flowsData : (flowsData.data || [])
-                const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
-
                 setRecentFlows(flows.slice(0, 5))
-                setRecentTasks(tasks.slice(0, 5))
             } catch (error) {
                 console.error("Error fetching dashboard data:", error)
             } finally {
@@ -48,38 +38,37 @@ const Dashboard = () => {
 
     const refreshData = async () => {
         try {
-            const [flowsData, tasksData] = await Promise.all([
-                flowService.getAll(),
-                taskService.getAll()
-            ])
+            const flowsData = await flowService.getAll()
             const flows = Array.isArray(flowsData) ? flowsData : (flowsData.data || [])
-            const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.data || [])
             setRecentFlows(flows.slice(0, 5))
-            setRecentTasks(tasks.slice(0, 5))
-            // Also refresh user data for updated points/energy
             await checkAuth()
         } catch (error) {
             console.error("Error refreshing data:", error)
         }
     }
 
-    const handleTaskAction = async (taskId, action) => {
-        if (!confirm(`Are you sure you want to ${action} this task?`)) return
+    const [deleteConfirm, setDeleteConfirm] = useState(null)
 
+    const handleDeleteFlow = async (flowId) => {
         try {
-            if (action === 'delete') {
-                await taskService.delete(taskId)
-            } else {
-                // 'complete' or 'fail'
-                const status = action === 'complete' ? 'completed' : 'failed'
-                await taskService.update(taskId, { status })
-            }
-            // Refresh data to show updates
-            refreshData()
-        } catch (error) {
-            console.error(`Error ${action}ing task:`, error)
-            alert(error.response?.data?.message || `Failed to ${action} task`)
+            await flowService.delete(flowId)
+            setRecentFlows(prev => prev.filter(f => f._id !== flowId))
+            setDeleteConfirm(null)
+        } catch (err) {
+            console.error('Delete failed:', err)
+            alert('Failed to delete flow')
         }
+    }
+
+    const getStatusBadge = (flow) => {
+        const status = flow.publicStatus || 'private'
+        const map = {
+            private: { label: '🔒 Private', cls: 'private' },
+            pending: { label: '⏳ Pending', cls: 'pending' },
+            approved: { label: '🌍 Public', cls: 'approved' },
+            rejected: { label: '❌ Rejected', cls: 'rejected' }
+        }
+        return map[status] || map.private
     }
 
     return (
@@ -95,85 +84,60 @@ const Dashboard = () => {
                 </header>
 
                 <div className="content-body">
+                    <StatsBar />
+
                     <div className="dashboard-actions">
                         <button className="btn-primary" onClick={() => setShowCreateFlow(true)}>+ Create Flow</button>
                         <button className="btn-card" onClick={() => setShowCreateTask(true)}>+ Create Task</button>
                     </div>
 
-                    <div className="dashboard-grid-2">
-                        <div className="dashboard-card">
-                            <h3>Recent Flows</h3>
-                            {loading ? <p>Loading...</p> : (
-                                recentFlows.length > 0 ? (
-                                    <ul className="dashboard-list">
-                                        {recentFlows.map(flow => (
+                    <div className="dashboard-card">
+                        <h3>Recent Flows</h3>
+                        {loading ? <p>Loading...</p> : (
+                            recentFlows.length > 0 ? (
+                                <ul className="dashboard-list">
+                                    {recentFlows.map(flow => {
+                                        const badge = getStatusBadge(flow)
+                                        return (
                                             <li
                                                 key={flow._id}
                                                 className="list-item"
                                                 style={{ cursor: 'pointer' }}
-                                                onClick={() => navigate(`/flow/${flow._id}`)}
-                                                title="Open in Canvas Editor"
                                             >
-                                                <span className="item-title">{flow.title || 'Untitled Flow'}</span>
-                                                <span className={`status-badge ${flow.status || 'draft'}`}>{flow.status || 'Draft'}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : <p className="empty-text">No flows found. Create one to get started!</p>
-                            )}
-                        </div>
-
-                        <div className="dashboard-card">
-                            <h3>Recent Tasks</h3>
-                            {loading ? <p>Loading...</p> : (
-                                recentTasks.length > 0 ? (
-                                    <ul className="dashboard-list">
-                                        {recentTasks.map(task => (
-                                            <li key={task._id} className="list-item">
-                                                <div className="item-info">
-                                                    <span className="item-title">{task.title || 'Untitled Task'}</span>
-                                                    <small className="item-subtitle">
-                                                        {task.workflowId?.title ? `in ${task.workflowId.title}` : 'No Flow'}
-                                                    </small>
+                                                <div className="flow-item-main" onClick={() => navigate(`/flow/${flow._id}`)} title="Open in Canvas Editor">
+                                                    <span className="item-title">{flow.title || 'Untitled Flow'}</span>
+                                                    <span className={`status-badge ${badge.cls}`}>{badge.label}</span>
                                                 </div>
-                                                <div className="item-actions">
-                                                    <span className={`status-badge ${task.status || 'pending'}`}>{task.status || 'Pending'}</span>
-
-                                                    {task.status !== 'completed' && task.status !== 'failed' && (
-                                                        <>
-                                                            <button
-                                                                className="btn-icon small success"
-                                                                title="Complete (+Points)"
-                                                                onClick={() => handleTaskAction(task._id, 'complete')}
-                                                            >
-                                                                ✅
-                                                            </button>
-                                                            <button
-                                                                className="btn-icon small danger"
-                                                                title="Fail"
-                                                                onClick={() => handleTaskAction(task._id, 'fail')}
-                                                            >
-                                                                ❌
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    <button
-                                                        className="btn-icon small"
-                                                        title="Delete"
-                                                        onClick={() => handleTaskAction(task._id, 'delete')}
-                                                    >
-                                                        🗑️
-                                                    </button>
-                                                </div>
+                                                <button
+                                                    className="flow-delete-btn"
+                                                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(flow._id) }}
+                                                    title="Delete flow"
+                                                >
+                                                    🗑️
+                                                </button>
                                             </li>
-                                        ))}
-                                    </ul>
-                                ) : <p className="empty-text">No tasks found. Keep it up!</p>
-                            )}
-                        </div>
+                                        )
+                                    })}
+                                </ul>
+                            ) : <p className="empty-text">No flows found. Create one to get started!</p>
+                        )}
                     </div>
                 </div>
             </main>
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirm && (
+                <div className="modal-overlay">
+                    <div className="delete-confirm-modal">
+                        <h3>🗑️ Delete Flow?</h3>
+                        <p>This action cannot be undone. All nodes, edges, and task data in this flow will be permanently deleted.</p>
+                        <div className="delete-confirm-actions">
+                            <button className="btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+                            <button className="btn-danger" onClick={() => handleDeleteFlow(deleteConfirm)}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modals */}
             {showCreateFlow && (
