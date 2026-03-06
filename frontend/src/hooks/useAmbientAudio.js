@@ -1,150 +1,197 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
 /**
- * useAmbientAudio — Manages ambient audio playback for session modes.
+ * useAmbientAudio — Manages ambient audio playback via YouTube IFrame API.
  *
- * Uses HTML5 Audio elements with looping. Supports play, stop,
- * volume control, and crossfading between tracks.
+ * Plays audio from a YouTube playlist URL. Supports play, stop, and volume control.
+ * Falls back silently if YouTube API fails or no URL is provided.
  */
 
-const AUDIO_TRACKS = {
-    lofi: '/audio/lofi.mp3',
-    upbeat: '/audio/upbeat.mp3',
-    nature: '/audio/nature.mp3',
-    clock: '/audio/clock.mp3',
-    cafe: '/audio/cafe.mp3'
+let ytApiLoaded = false
+let ytApiLoadPromise = null
+
+function loadYouTubeAPI() {
+    if (ytApiLoaded) return Promise.resolve()
+    if (ytApiLoadPromise) return ytApiLoadPromise
+
+    ytApiLoadPromise = new Promise((resolve) => {
+        if (window.YT && window.YT.Player) {
+            ytApiLoaded = true
+            resolve()
+            return
+        }
+
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        document.head.appendChild(tag)
+
+        window.onYouTubeIframeAPIReady = () => {
+            ytApiLoaded = true
+            resolve()
+        }
+    })
+
+    return ytApiLoadPromise
+}
+
+function extractPlaylistId(url) {
+    if (!url) return null
+    try {
+        const parsed = new URL(url)
+        return parsed.searchParams.get('list') || null
+    } catch {
+        // Try to extract from non-standard formats
+        const match = url.match(/[?&]list=([^&]+)/)
+        return match ? match[1] : null
+    }
+}
+
+function extractVideoId(url) {
+    if (!url) return null
+    try {
+        const parsed = new URL(url)
+        if (parsed.hostname.includes('youtu.be')) {
+            return parsed.pathname.slice(1)
+        }
+        return parsed.searchParams.get('v') || null
+    } catch {
+        return null
+    }
 }
 
 export default function useAmbientAudio() {
     const [isPlaying, setIsPlaying] = useState(false)
-    const [volume, setVolumeState] = useState(0.5)
-    const [currentTrack, setCurrentTrack] = useState(null)
+    const [volume, setVolumeState] = useState(50)
+    const [currentUrl, setCurrentUrl] = useState(null)
 
-    const audioRef = useRef(null)
-    const fadeIntervalRef = useRef(null)
+    const playerRef = useRef(null)
+    const containerRef = useRef(null)
 
-    // Clean up on unmount
+    // Create hidden container for YouTube player
     useEffect(() => {
+        if (!containerRef.current) {
+            const div = document.createElement('div')
+            div.id = 'yt-audio-player'
+            div.style.position = 'fixed'
+            div.style.top = '-9999px'
+            div.style.left = '-9999px'
+            div.style.width = '1px'
+            div.style.height = '1px'
+            div.style.opacity = '0'
+            div.style.pointerEvents = 'none'
+            document.body.appendChild(div)
+            containerRef.current = div
+        }
+
         return () => {
-            if (audioRef.current) {
-                audioRef.current.pause()
-                audioRef.current = null
+            if (playerRef.current) {
+                try { playerRef.current.destroy() } catch (e) { /* ignore */ }
+                playerRef.current = null
             }
-            if (fadeIntervalRef.current) {
-                clearInterval(fadeIntervalRef.current)
+            if (containerRef.current) {
+                containerRef.current.remove()
+                containerRef.current = null
             }
         }
     }, [])
 
-    // Fade out current audio, then start new track
-    const crossfadeTo = useCallback((newTrackKey) => {
-        const src = AUDIO_TRACKS[newTrackKey]
-        if (!src) return
+    const play = useCallback(async (youtubeUrl) => {
+        if (!youtubeUrl) return
+        if (currentUrl === youtubeUrl && isPlaying) return
 
-        const startNewTrack = () => {
-            const audio = new Audio(src)
-            audio.loop = true
-            audio.volume = 0
-            audioRef.current = audio
+        try {
+            await loadYouTubeAPI()
+        } catch {
+            console.warn('YouTube API failed to load')
+            return
+        }
 
-            audio.play().then(() => {
-                setIsPlaying(true)
-                setCurrentTrack(newTrackKey)
+        // Destroy old player
+        if (playerRef.current) {
+            try { playerRef.current.destroy() } catch (e) { /* ignore */ }
+            playerRef.current = null
+        }
 
-                // Fade in
-                let vol = 0
-                const targetVol = volume
-                fadeIntervalRef.current = setInterval(() => {
-                    vol = Math.min(vol + 0.05, targetVol)
-                    if (audioRef.current) audioRef.current.volume = vol
-                    if (vol >= targetVol) {
-                        clearInterval(fadeIntervalRef.current)
+        // Ensure container exists
+        if (!containerRef.current) return
+
+        // Reset container
+        containerRef.current.innerHTML = ''
+        const playerDiv = document.createElement('div')
+        playerDiv.id = 'yt-audio-inner'
+        containerRef.current.appendChild(playerDiv)
+
+        const playlistId = extractPlaylistId(youtubeUrl)
+        const videoId = extractVideoId(youtubeUrl)
+
+        const playerVars = {
+            autoplay: 1,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0
+        }
+
+        if (playlistId) {
+            playerVars.listType = 'playlist'
+            playerVars.list = playlistId
+            playerVars.loop = 1
+        }
+
+        playerRef.current = new window.YT.Player('yt-audio-inner', {
+            height: '1',
+            width: '1',
+            videoId: playlistId ? undefined : (videoId || undefined),
+            playerVars,
+            events: {
+                onReady: (event) => {
+                    event.target.setVolume(volume)
+                    event.target.playVideo()
+                    setIsPlaying(true)
+                    setCurrentUrl(youtubeUrl)
+                },
+                onStateChange: (event) => {
+                    // Loop single video if no playlist
+                    if (!playlistId && event.data === window.YT.PlayerState.ENDED) {
+                        event.target.seekTo(0)
+                        event.target.playVideo()
                     }
-                }, 50)
-            }).catch(err => {
-                console.warn('Audio playback failed (user interaction required):', err.message)
-                setIsPlaying(false)
-            })
-        }
-
-        // If currently playing, fade out first
-        if (audioRef.current && isPlaying) {
-            let vol = audioRef.current.volume
-            if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
-
-            fadeIntervalRef.current = setInterval(() => {
-                vol = Math.max(vol - 0.05, 0)
-                if (audioRef.current) audioRef.current.volume = vol
-                if (vol <= 0) {
-                    clearInterval(fadeIntervalRef.current)
-                    audioRef.current.pause()
-                    audioRef.current = null
-                    startNewTrack()
+                },
+                onError: () => {
+                    console.warn('YouTube player error — falling back to silence')
+                    setIsPlaying(false)
                 }
-            }, 30)
-        } else {
-            startNewTrack()
-        }
-    }, [isPlaying, volume])
-
-    const play = useCallback((modeAudioKey) => {
-        if (!modeAudioKey || !AUDIO_TRACKS[modeAudioKey]) return
-
-        if (currentTrack === modeAudioKey && isPlaying) return // Already playing this track
-
-        crossfadeTo(modeAudioKey)
-    }, [currentTrack, isPlaying, crossfadeTo])
+            }
+        })
+    }, [currentUrl, isPlaying, volume])
 
     const stop = useCallback(() => {
-        if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current)
-
-        if (audioRef.current) {
-            // Fade out
-            let vol = audioRef.current.volume
-            fadeIntervalRef.current = setInterval(() => {
-                vol = Math.max(vol - 0.05, 0)
-                if (audioRef.current) audioRef.current.volume = vol
-                if (vol <= 0) {
-                    clearInterval(fadeIntervalRef.current)
-                    if (audioRef.current) {
-                        audioRef.current.pause()
-                        audioRef.current = null
-                    }
-                    setIsPlaying(false)
-                    setCurrentTrack(null)
-                }
-            }, 30)
-        } else {
-            setIsPlaying(false)
-            setCurrentTrack(null)
+        if (playerRef.current) {
+            try {
+                playerRef.current.stopVideo()
+                playerRef.current.destroy()
+            } catch (e) { /* ignore */ }
+            playerRef.current = null
         }
+        setIsPlaying(false)
+        setCurrentUrl(null)
     }, [])
 
     const setVolume = useCallback((newVol) => {
-        const clamped = Math.max(0, Math.min(1, newVol))
+        const clamped = Math.max(0, Math.min(100, Math.round(newVol)))
         setVolumeState(clamped)
-        if (audioRef.current) {
-            audioRef.current.volume = clamped
+        if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
+            playerRef.current.setVolume(clamped)
         }
     }, [])
-
-    const toggleMute = useCallback(() => {
-        if (audioRef.current) {
-            if (audioRef.current.volume > 0) {
-                audioRef.current.volume = 0
-            } else {
-                audioRef.current.volume = volume
-            }
-        }
-    }, [volume])
 
     return {
         play,
         stop,
         setVolume,
-        toggleMute,
         isPlaying,
         volume,
-        currentTrack
+        currentUrl
     }
 }

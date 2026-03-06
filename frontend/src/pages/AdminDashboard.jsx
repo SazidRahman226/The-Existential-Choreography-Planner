@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Sidebar from '../components/dashboard/Sidebar'
 import UsersTab from '../components/dashboard/UsersTab'
 import PendingFlowsReview from '../components/admin/PendingFlowsReview'
+import SessionEditor from '../components/admin/SessionEditor'
 import '../styles/auth.css'
 
 const AdminDashboard = () => {
@@ -30,11 +31,18 @@ const AdminDashboard = () => {
                         >
                             👥 User Management
                         </button>
+                        <button
+                            className={`admin-tab-btn ${activeTab === 'sessions' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('sessions')}
+                        >
+                            🎭 Sessions
+                        </button>
                     </div>
 
                     <div className="admin-tab-content">
                         {activeTab === 'flows' && <PendingFlowsReview />}
                         {activeTab === 'users' && <UsersTab />}
+                        {activeTab === 'sessions' && <SessionEditor />}
                     </div>
                 </div>
             </main>

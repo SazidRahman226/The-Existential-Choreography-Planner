@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef, memo } from 'react'
-import SESSION_MODES from '../../config/sessionModes'
 
 /**
  * FocusOverlay — Full-screen immersive overlay for task execution.
  *
  * Shows a large circular countdown ring, the task title,
- * rotating motivational quotes, and ambient audio controls.
- * Themed to the active task's session mode.
+ * rotating motivational quotes, and YouTube video/audio controls.
+ * Themed by the active session from the database.
  */
 
 function formatTime(seconds) {
@@ -17,6 +16,31 @@ function formatTime(seconds) {
 
 const RING_RADIUS = 130
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+
+const DEFAULT_GRADIENT = ['#1a1a2e', '#16213e']
+const DEFAULT_RING = '#6366f1'
+const DEFAULT_ACCENT = '#818cf8'
+
+function extractVideoId(url) {
+    if (!url) return null
+    try {
+        const parsed = new URL(url)
+        if (parsed.hostname.includes('youtu.be')) return parsed.pathname.slice(1)
+        return parsed.searchParams.get('v') || null
+    } catch {
+        return null
+    }
+}
+
+function extractPlaylistId(url) {
+    if (!url) return null
+    try {
+        const parsed = new URL(url)
+        return parsed.searchParams.get('list') || null
+    } catch {
+        return null
+    }
+}
 
 const FocusOverlay = ({
     activeNode,
@@ -34,57 +58,92 @@ const FocusOverlay = ({
     onVolumeChange,
     isAudioPlaying,
     // Streak
-    streakCount
+    streakCount,
+    // Session object from DB
+    session
 }) => {
     const [quote, setQuote] = useState('')
     const [quoteVisible, setQuoteVisible] = useState(true)
+    const [videoEnabled, setVideoEnabled] = useState(true)
+    const [audioEnabled, setAudioEnabled] = useState(true)
     const quoteIntervalRef = useRef(null)
 
-    const sessionMode = activeNode?.data?.sessionMode || 'focus'
-    const mode = SESSION_MODES[sessionMode] || SESSION_MODES.focus
+    const sessionName = session?.name || 'Focus'
+    const sessionEmoji = session?.emoji || '🎯'
+    const quotes = session?.quotes || []
+    const quoteInterval = (session?.quoteInterval || 20) * 1000
+    const youtubeUrl = session?.youtubePlaylistUrl || ''
 
-    // Rotate quotes every 20s
+    const gradient = DEFAULT_GRADIENT
+    const ring = DEFAULT_RING
+    const accent = DEFAULT_ACCENT
+
+    // Build YouTube embed URL for background video
+    const playlistId = extractPlaylistId(youtubeUrl)
+    const videoId = extractVideoId(youtubeUrl)
+    let ytEmbedUrl = null
+    if (youtubeUrl && videoEnabled) {
+        const params = 'autoplay=1&mute=1&controls=0&loop=1&showinfo=0&rel=0&modestbranding=1&playsinline=1&disablekb=1'
+        if (playlistId) {
+            ytEmbedUrl = `https://www.youtube.com/embed?listType=playlist&list=${playlistId}&${params}`
+        } else if (videoId) {
+            ytEmbedUrl = `https://www.youtube.com/embed/${videoId}?${params}&playlist=${videoId}`
+        }
+    }
+
+    // Rotate quotes
     useEffect(() => {
+        if (quotes.length === 0) return
+
         const pickQuote = () => {
-            const quotes = mode.quotes || []
-            if (quotes.length === 0) return
             setQuoteVisible(false)
             setTimeout(() => {
                 setQuote(quotes[Math.floor(Math.random() * quotes.length)])
                 setQuoteVisible(true)
-            }, 400) // Brief fade-out before switching
+            }, 400)
         }
 
-        pickQuote() // Initial quote
-        quoteIntervalRef.current = setInterval(pickQuote, 20000)
+        pickQuote()
+        quoteIntervalRef.current = setInterval(pickQuote, quoteInterval)
 
         return () => {
             if (quoteIntervalRef.current) clearInterval(quoteIntervalRef.current)
         }
-    }, [mode])
+    }, [session?._id, quotes.length])
 
     // Calculate ring progress
     const elapsed = totalDuration - timeRemaining
     const progress = totalDuration > 0 ? elapsed / totalDuration : 0
     const dashOffset = RING_CIRCUMFERENCE * (1 - progress)
-
-    // Progress percentage text
     const progressPercent = Math.round(progress * 100)
 
     return (
         <div
             className="focus-overlay"
             style={{
-                '--focus-grad-1': mode.gradient[0],
-                '--focus-grad-2': mode.gradient[1],
-                '--focus-ring': mode.ring,
-                '--focus-accent': mode.accent
+                '--focus-grad-1': gradient[0],
+                '--focus-grad-2': gradient[1],
+                '--focus-ring': ring,
+                '--focus-accent': accent
             }}
         >
+            {/* YouTube Video Background (blurred) */}
+            {ytEmbedUrl && (
+                <div className="focus-yt-bg">
+                    <iframe
+                        src={ytEmbedUrl}
+                        title="Session Background"
+                        allow="autoplay; encrypted-media"
+                        frameBorder="0"
+                        className="focus-yt-iframe"
+                    />
+                </div>
+            )}
+
             {/* Mode badge */}
             <div className="focus-mode-badge">
-                <span>{mode.emoji}</span>
-                <span>{mode.label} Mode</span>
+                <span>{sessionEmoji}</span>
+                <span>{sessionName} Mode</span>
             </div>
 
             {/* Streak badge */}
@@ -119,7 +178,7 @@ const FocusOverlay = ({
                             cy="150"
                             r={RING_RADIUS}
                             fill="none"
-                            stroke={mode.ring}
+                            stroke={ring}
                             strokeWidth="8"
                             strokeLinecap="round"
                             strokeDasharray={RING_CIRCUMFERENCE}
@@ -133,7 +192,7 @@ const FocusOverlay = ({
                             cy="150"
                             r={RING_RADIUS}
                             fill="none"
-                            stroke={mode.ring}
+                            stroke={ring}
                             strokeWidth="2"
                             strokeDasharray={RING_CIRCUMFERENCE}
                             strokeDashoffset={dashOffset}
@@ -159,29 +218,54 @@ const FocusOverlay = ({
                 )}
 
                 {/* Quote */}
-                <div className={`focus-quote ${quoteVisible ? 'visible' : ''}`}>
-                    "{quote}"
-                </div>
+                {quotes.length > 0 && (
+                    <div className={`focus-quote ${quoteVisible ? 'visible' : ''}`}>
+                        "{quote}"
+                    </div>
+                )}
             </div>
 
             {/* Bottom controls */}
             <div className="focus-controls">
                 <div className="focus-controls-left">
-                    {/* Volume slider */}
-                    <div className="focus-volume">
-                        <span className="focus-volume-icon" title="Audio">
-                            {isAudioPlaying ? '🔊' : '🔇'}
-                        </span>
-                        <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={audioVolume}
-                            onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
-                            className="focus-volume-slider"
-                        />
+                    {/* Media toggles */}
+                    <div className="focus-media-toggles">
+                        {youtubeUrl && (
+                            <>
+                                <button
+                                    className={`focus-toggle-btn ${videoEnabled ? 'active' : ''}`}
+                                    onClick={() => setVideoEnabled(!videoEnabled)}
+                                    title={videoEnabled ? 'Turn off video' : 'Turn on video'}
+                                >
+                                    {videoEnabled ? '🎬' : '🚫'}
+                                </button>
+                                <button
+                                    className={`focus-toggle-btn ${audioEnabled ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setAudioEnabled(!audioEnabled)
+                                        onVolumeChange(audioEnabled ? 0 : 0.5)
+                                    }}
+                                    title={audioEnabled ? 'Turn off audio' : 'Turn on audio'}
+                                >
+                                    {audioEnabled ? '🔊' : '🔇'}
+                                </button>
+                            </>
+                        )}
                     </div>
+                    {/* Volume slider */}
+                    {audioEnabled && (
+                        <div className="focus-volume">
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.05"
+                                value={audioVolume}
+                                onChange={(e) => onVolumeChange(parseFloat(e.target.value))}
+                                className="focus-volume-slider"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className="focus-controls-center">

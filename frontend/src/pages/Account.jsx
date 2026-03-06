@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../providers'
 import Sidebar from '../components/dashboard/Sidebar'
 import AchievementShowcase from '../components/achievements/AchievementShowcase'
+import MySessions from '../components/account/MySessions'
 import '../styles/auth.css'
 
 const Account = () => {
@@ -330,6 +331,10 @@ const Account = () => {
 
                         {!isEditing && (
                             <AchievementShowcase />
+                        )}
+
+                        {!isEditing && (
+                            <MySessions />
                         )}
                     </div>
                 </div>

@@ -2069,6 +2069,60 @@
             var(--focus-grad-1, #1a1a2e),
             var(--focus-grad-2, #16213e));
     animation: focusFadeIn 0.5s ease-out;
+    overflow: hidden;
+}
+
+/* YouTube blurred video background */
+.focus-yt-bg {
+    position: absolute;
+    inset: -20px;
+    z-index: 0;
+    overflow: hidden;
+    filter: blur(20px) brightness(0.4);
+    pointer-events: none;
+}
+
+.focus-yt-iframe {
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    border: none;
+    object-fit: cover;
+}
+
+.focus-mode-badge,
+.focus-streak-badge,
+.focus-center,
+.focus-controls,
+.focus-paused-label {
+    position: relative;
+    z-index: 1;
+}
+
+/* Media toggle buttons */
+.focus-media-toggles {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.3rem;
+}
+
+.focus-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+}
+
+.focus-toggle-btn.active {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.focus-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 @keyframes focusFadeIn {

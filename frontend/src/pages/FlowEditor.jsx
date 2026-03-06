@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../providers'
 import flowService from '../services/flow.service'
 import taskService from '../services/task.service'
-import SESSION_MODES from '../config/sessionModes'
+import sessionService from '../services/session.service'
 import FlowCanvas from '../components/canvas/FlowCanvas'
 import CanvasToolbar from '../components/canvas/CanvasToolbar'
 import NodeEditPanel from '../components/canvas/NodeEditPanel'
@@ -40,6 +40,7 @@ const FlowEditor = () => {
     const [levelUpData, setLevelUpData] = useState(null)
     const [publicStatus, setPublicStatus] = useState('private')
     const [showShareModal, setShowShareModal] = useState(false)
+    const [sessions, setSessions] = useState([])
     const { user } = useAuth()
 
     const [selectedNodeId, setSelectedNodeId] = useState(null)
@@ -55,13 +56,18 @@ const FlowEditor = () => {
     const [showSchedule, setShowSchedule] = useState(false)
     const ambientAudio = useAmbientAudio()
 
+    // Fetch available sessions from DB
+    useEffect(() => {
+        sessionService.getAll().then(data => setSessions(data)).catch(() => { })
+    }, [])
+
     // Start/switch audio when focus is active and active node changes
     useEffect(() => {
         if (isFocusActive && runner.activeNode) {
-            const modeKey = runner.activeNode.data?.sessionMode || 'focus'
-            const mode = SESSION_MODES[modeKey]
-            if (mode?.audio) {
-                ambientAudio.play(mode.audio)
+            const sessionId = runner.activeNode.data?.sessionMode
+            const session = sessions.find(s => s._id === sessionId)
+            if (session?.youtubePlaylistUrl) {
+                ambientAudio.play(session.youtubePlaylistUrl)
             }
         } else if (!isFocusActive) {
             ambientAudio.stop()
@@ -583,6 +589,7 @@ const FlowEditor = () => {
                         onUpdateEdge={handleEdgeUpdate}
                         onDelete={handleNodeDelete}
                         onClose={() => setSelectedNodeId(null)}
+                        sessions={sessions}
                     />
                 )}
 
@@ -679,6 +686,7 @@ const FlowEditor = () => {
                         onVolumeChange={ambientAudio.setVolume}
                         isAudioPlaying={ambientAudio.isPlaying}
                         streakCount={runner.streakCount}
+                        session={sessions.find(s => s._id === runner.activeNode?.data?.sessionMode) || null}
                     />
                 )}
 

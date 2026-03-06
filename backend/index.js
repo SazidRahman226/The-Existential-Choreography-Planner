@@ -6,6 +6,7 @@ import passport from './config/passport.js';
 import taskRoutes from './routes/taskRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import flowRoutes from './routes/flowRoutes.js';
+import sessionRoutes from './routes/sessionRoutes.js';
 import { connectDB } from './config/db.js';
 
 // Register all Mongoose models so populate() works
@@ -34,6 +35,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/flows', flowRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 app.get('/health', (req, res) => {
     res.json({ status: 'Server is running' });

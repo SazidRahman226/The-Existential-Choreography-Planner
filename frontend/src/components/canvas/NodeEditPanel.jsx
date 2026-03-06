@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import SESSION_MODES from '../../config/sessionModes'
 import { formatScheduledTime, computeScheduledEnd } from '../../utils/scheduleValidation'
 
 const DIFFICULTY_PRESETS = {
@@ -10,7 +9,7 @@ const DIFFICULTY_PRESETS = {
 
 const DURATION_PRESETS = [15, 30, 45, 60]
 
-const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, onClose }) => {
+const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, onClose, sessions }) => {
     const nodeType = node?.data?.nodeType || 'task'
 
     const [formData, setFormData] = useState({
@@ -365,21 +364,24 @@ const NodeEditPanel = ({ node, edges, nodes, onUpdate, onUpdateEdge, onDelete, o
                 <div className="form-group">
                     <label>Session Mode</label>
                     <div className="mode-selector">
-                        {Object.entries(SESSION_MODES).map(([key, mode]) => (
+                        {(sessions || []).map(s => (
                             <button
-                                key={key}
-                                className={`mode-option ${formData.sessionMode === key ? 'active' : ''}`}
+                                key={s._id}
+                                className={`mode-option ${formData.sessionMode === s._id ? 'active' : ''}`}
                                 onClick={() => {
-                                    setFormData(prev => ({ ...prev, sessionMode: key }))
-                                    pushUpdate({ sessionMode: key })
+                                    setFormData(prev => ({ ...prev, sessionMode: s._id }))
+                                    pushUpdate({ sessionMode: s._id })
                                 }}
-                                style={formData.sessionMode === key ? { borderColor: mode.ring, background: `${mode.ring}18` } : {}}
-                                title={mode.label}
+                                style={formData.sessionMode === s._id ? { borderColor: '#6366f1', background: '#6366f118' } : {}}
+                                title={s.name}
                             >
-                                <span className="mode-emoji">{mode.emoji}</span>
-                                <span className="mode-label">{mode.label}</span>
+                                <span className="mode-emoji">{s.emoji}</span>
+                                <span className="mode-label">{s.name}</span>
                             </button>
                         ))}
+                        {(!sessions || sessions.length === 0) && (
+                            <p className="empty-text" style={{ fontSize: '0.75rem' }}>No sessions available. Admin can create them in the Admin Panel.</p>
+                        )}
                     </div>
                 </div>
 
