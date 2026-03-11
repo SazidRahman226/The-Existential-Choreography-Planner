@@ -70,20 +70,7 @@ const CreateFlowModal = ({ onClose, onSuccess }) => {
                         />
                     </div>
 
-                    <div className="form-group checkbox-group">
-                        <label className="checkbox-label">
-                            <input
-                                type="checkbox"
-                                name="isPublic"
-                                checked={formData.isPublic}
-                                onChange={handleChange}
-                            />
-                            Make Public
-                        </label>
-                        <p className="help-text" style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '0.25rem', marginLeft: '1.5rem' }}>
-                            Public flows can be viewed and cloned by other community members.
-                        </p>
-                    </div>
+
 
                     <div className="modal-actions">
                         <button type="button" className="btn-card" onClick={onClose}>Cancel</button>

@@ -27,14 +27,32 @@ const CanvasNode = ({
     const nodeRef = useRef(null)
     const nodeType = node.data?.nodeType || 'task'
 
+    const dragStartPos = useRef({ x: 0, y: 0 })
+
     const handleMouseDown = useCallback((e) => {
         if (e.button !== 0) return
         if (e.target.classList.contains('node-handle')) return
         if (e.target.closest('.status-cycle-btn')) return
         e.stopPropagation()
-        onSelect(node.id)
+
+        dragStartPos.current = { x: e.clientX, y: e.clientY }
         onDragStart(node.id, e)
-    }, [node.id, onSelect, onDragStart])
+    }, [node.id, onDragStart])
+
+    const handleClick = useCallback((e) => {
+        if (e.button !== 0) return
+        if (e.target.classList.contains('node-handle')) return
+        if (e.target.closest('.status-cycle-btn')) return
+
+        const dx = e.clientX - dragStartPos.current.x
+        const dy = e.clientY - dragStartPos.current.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+
+        if (distance < 5) {
+            e.stopPropagation()
+            onSelect(node.id)
+        }
+    }, [node.id, onSelect])
 
     const handleOutputMouseDown = useCallback((e) => {
         e.stopPropagation()
@@ -162,6 +180,7 @@ const CanvasNode = ({
                 transform: `translate(${node.position.x}px, ${node.position.y}px)`,
             }}
             onMouseDown={handleMouseDown}
+            onClick={handleClick}
             data-node-id={node.id}
         >
             {/* Input Handle */}
