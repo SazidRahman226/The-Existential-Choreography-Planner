@@ -230,11 +230,6 @@ export const forgotPasswordController = async (req, res) => {
         }
 
         const resetToken = await forgotPassword(email);
-
-        // Construct reset URL
-        // Assuming frontend runs on same host/port in dev, or configured URL
-        // For Docker, we might need a FRONTEND_URL env var.
-        // Defaulting to http://localhost:5173 for now as per previous context
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
@@ -279,13 +274,6 @@ export const resetPasswordController = async (req, res) => {
         }
 
         const result = await resetPassword(token, password);
-
-        // Set cookies
-        // Re-using the helper from above would be nice, but it's not exported.
-        // I'll Copy-paste logic or refactor. Since it's inside the same file, I can just use implementation details?
-        // Wait, setTokenCookies is defined in this file (lines 6-22). I can use it!
-        // But scope? Yes, it is in module scope.
-
         const isProduction = process.env.NODE_ENV === 'production';
         res.cookie('accessToken', result.accessToken, {
             httpOnly: true,

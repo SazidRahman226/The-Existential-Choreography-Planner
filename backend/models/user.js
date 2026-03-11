@@ -115,10 +115,6 @@ const UserSchema = new mongoose.Schema({
 UserSchema.methods.updateEnergy = async function () {
     if (this.energy >= 100) {
         this.lastEnergyRegen = new Date();
-        // save is only needed if we updated the date, but if energy is full, strictly speaking we just reset the timer
-        // to avoid "instant" regen if they spend energy now.
-        // But actually, if I am at 100, my regen timer effectively "starts" the moment I drop below 100.
-        // So keeping lastEnergyRegen at "now" whenever I am at 100 is correct.
         if (this.isModified('lastEnergyRegen')) await this.save();
         return;
     }
