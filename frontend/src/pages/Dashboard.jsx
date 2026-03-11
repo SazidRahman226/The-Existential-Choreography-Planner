@@ -88,7 +88,6 @@ const Dashboard = () => {
 
                     <div className="dashboard-actions">
                         <button className="btn-primary" onClick={() => setShowCreateFlow(true)}>+ Create Flow</button>
-                        <button className="btn-card" onClick={() => setShowCreateTask(true)}>+ Create Task</button>
                     </div>
 
                     <div className="dashboard-card">
